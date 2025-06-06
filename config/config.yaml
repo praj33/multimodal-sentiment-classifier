@@ -1,0 +1,4 @@
+model:
+  text: true
+  audio: true
+  video: true

@@ -1,0 +1,9 @@
+transformers
+torch
+torchaudio
+librosa
+opencv-python
+numpy
+pandas
+PyYAML
+scikit-learn

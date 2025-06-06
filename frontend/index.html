@@ -1,0 +1,64 @@
+<!DOCTYPE html><html lang="en" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Sentiment Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+  <script src="script.js" defer></script>
+</head>
+<body class="bg-gradient-to-br from-gray-100 via-white to-gray-200 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-800 dark:text-gray-200 min-h-screen flex items-center justify-center p-4">  <!-- Toast Notification -->  <div id="toast" class="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow hidden"></div>  <!-- Main Card -->  <div class="backdrop-blur-xl bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl p-8 max-w-2xl w-full space-y-6 transition"><!-- Header -->
+<div class="flex items-center justify-between">
+  <h1 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">🔍 AI Sentiment Analyzer</h1>
+  <button id="darkToggle" class="text-xl" title="Toggle Theme">🌗</button>
+</div>
+
+<!-- Mode Selection -->
+<div>
+  <label class="block text-sm font-semibold mb-1">Select Input Mode:</label>
+  <select id="mode" class="w-full p-2 border rounded bg-white dark:bg-gray-700">
+    <option value="text">Text</option>
+    <option value="audio">Audio</option>
+    <option value="video">Video</option>
+    <option value="multimodal">Multimodal</option>
+  </select>
+</div>
+
+<!-- Text Input -->
+<div id="text-input" class="space-y-2">
+  <label class="block text-sm font-semibold">Input Text:</label>
+  <textarea id="text" class="w-full p-3 border rounded bg-white dark:bg-gray-700 text-sm" rows="4" placeholder="e.g. I feel amazing today!"></textarea>
+</div>
+
+<!-- File Upload -->
+<div id="file-input" class="space-y-2 hidden">
+  <label class="block text-sm font-semibold">Upload Audio/Video:</label>
+  <input type="file" id="file" class="w-full p-2 border rounded bg-white dark:bg-gray-700" />
+</div>
+
+<!-- Submit Button -->
+<button onclick="analyze()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition transform hover:scale-105">
+  🚀 Analyze
+</button>
+
+<!-- Result Display -->
+<div class="bg-gray-100 dark:bg-gray-700 p-5 rounded shadow-inner relative">
+  <div id="loader" class="hidden absolute top-3 right-3 animate-spin h-5 w-5 border-2 border-t-indigo-500 border-gray-300 rounded-full"></div>
+  <h2 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">Prediction:</h2>
+  <div id="result" class="text-sm leading-relaxed space-y-2">
+    <p class="text-gray-400">Result will appear here...</p>
+  </div>
+  <div id="bar" class="mt-3 hidden">
+    <div class="w-full h-2 bg-gray-300 rounded-full">
+      <div id="bar-fill" class="h-2 bg-indigo-500 rounded-full" style="width: 0%"></div>
+    </div>
+    <p class="text-xs mt-1 text-right" id="conf-label"></p>
+  </div>
+</div>
+
+  </div></body>
+</html>
