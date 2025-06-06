@@ -5,7 +5,11 @@ import torch
 # Load sentiment pipeline (text only for now)
 @st.cache_resource
 def load_model():
-    return pipeline("sentiment-analysis", model="distilbert-base-uncased", device=-1)
+    return pipeline(
+        "sentiment-analysis",
+        model="distilbert-base-uncased-finetuned-sst-2-english",
+        device=-1  # Use CPU
+    )
 
 classifier = load_model()
 
