@@ -5,7 +5,7 @@ from transformers import pipeline
 class TextClassifier:
     def __init__(self):
         # Use default sentiment analysis model from Hugging Face
-        self.classifier = pipeline("sentiment-analysis")
+        self.classifier = pipeline("sentiment-analysis", model="distilbert-base-uncased", device=-1)
 
     def predict(self, text):
         result = self.classifier(text)[0]  # Get first result
