@@ -79,7 +79,7 @@ async function analyze() {
         method: "POST",
         body: formData
       });
-    }
+    } 
 
     const data = await response.json();
     setLoading(false);
@@ -106,7 +106,7 @@ async function analyze() {
       "<div class='text-sm'>Confidence: " + (confidence * 100).toFixed(2) + "%</div>";
 
     // Animate confidence bar
-    bar.style.display = "block";
+    bar.style.display = "block"; 
     setTimeout(() => {
       barFill.style.transition = "width 0.5s ease";
       barFill.style.width = (confidence * 100) + "%";
@@ -120,4 +120,4 @@ async function analyze() {
     resultBox.innerHTML = "<span class='text-red-500'>❌ " + err.message + "</span>";
     showToast("Unexpected error", false);
   }
-}
+}  
