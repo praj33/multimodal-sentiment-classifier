@@ -1,14 +1,5 @@
 streamlit
 transformers==4.40.1
-torch
+scikit-learn
 numpy
 pandas
-scikit-learn
-matplotlib
-seaborn
-fastapi
-uvicorn
-python-multipart
-pyyaml
-python-jose[cryptography]
-passlib[bcrypt]
