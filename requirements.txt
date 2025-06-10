@@ -1,8 +1,6 @@
-streamlit==1.32.2
+streamlit
 transformers==4.36.2
-torch==2.1.2
-tokenizers>=0.14,<0.19
+torch==2.0.1
 scikit-learn
 numpy
 pandas
-requests
