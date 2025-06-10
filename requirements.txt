@@ -1,5 +1,6 @@
-streamlit
+streamlit==1.45.1
 transformers==4.36.2
+tokenizers==0.15.2
 torch==2.2.2
 scikit-learn
 numpy
