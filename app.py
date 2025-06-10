@@ -6,7 +6,7 @@ from transformers import pipeline
 def load_model():
     return pipeline(
         "sentiment-analysis",
-        model="distilbert-base-uncased",
+        model="distilbert-base-uncased-finetuned-sst-2-english",
         device=-1  # Use CPU for compatibility on platforms like Render/Streamlit Cloud
     )
 
