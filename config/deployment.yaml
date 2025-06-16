@@ -1,0 +1,114 @@
+# deployment.yaml - Comprehensive deployment configuration
+
+app_name: "multimodal-sentiment-api"
+docker_image: "multimodal-sentiment:latest"
+port: 8000
+environment: "production"
+
+# AWS Configuration
+aws:
+  region: "us-east-1"
+  instance_type: "t3.medium"
+  min_capacity: 1
+  max_capacity: 5
+  lambda:
+    runtime: "python3.9"
+    timeout: 300
+    memory_size: 1024
+  ecs:
+    cpu: "512"
+    memory: "1024"
+    network_mode: "awsvpc"
+
+# Google Cloud Platform Configuration
+gcp:
+  region: "us-central1"
+  machine_type: "e2-medium"
+  min_instances: 1
+  max_instances: 5
+  cloud_run:
+    cpu_limit: "1000m"
+    memory_limit: "2Gi"
+    concurrency: 100
+
+# Microsoft Azure Configuration
+azure:
+  location: "East US"
+  sku: "B2s"
+  min_replicas: 1
+  max_replicas: 5
+  container_instances:
+    cpu: 1
+    memory_gb: 2
+
+# Heroku Configuration
+heroku:
+  dyno_type: "standard-1x"
+  region: "us"
+  addons:
+    - "heroku-postgresql:hobby-dev"
+
+# Render Configuration
+render:
+  plan: "starter"
+  region: "oregon"
+  build_command: "pip install -r requirements.txt"
+  start_command: "uvicorn api:app --host 0.0.0.0 --port $PORT"
+
+# Docker Configuration
+docker:
+  base_image: "python:3.9-slim"
+  working_dir: "/app"
+  expose_port: 8000
+  health_check:
+    test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+    interval: "30s"
+    timeout: "10s"
+    retries: 3
+
+# Environment Variables
+environment_variables:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  MAX_WORKERS: "4"
+  TIMEOUT_SECONDS: "300"
+  
+# Scaling Configuration
+scaling:
+  auto_scaling: true
+  target_cpu_utilization: 70
+  target_memory_utilization: 80
+  scale_up_cooldown: "300s"
+  scale_down_cooldown: "300s"
+
+# Monitoring and Logging
+monitoring:
+  health_check_path: "/health"
+  metrics_path: "/metrics"
+  log_level: "INFO"
+  enable_request_logging: true
+  enable_performance_monitoring: true
+
+# Security Configuration
+security:
+  cors_enabled: true
+  cors_origins: ["*"]
+  rate_limiting:
+    enabled: true
+    requests_per_minute: 100
+  api_key_required: false
+
+# Database Configuration
+database:
+  type: "sqlite"  # sqlite, postgresql, mysql
+  path: "logs/sentiment.db"
+  connection_pool_size: 10
+  connection_timeout: 30
+
+# Performance Configuration
+performance:
+  max_request_size: "10MB"
+  request_timeout: "300s"
+  worker_processes: 4
+  worker_connections: 1000
+  keepalive_timeout: "65s"
