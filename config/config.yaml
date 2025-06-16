@@ -2,3 +2,26 @@ model:
   text: true
   audio: true
   video: true
+
+fusion:
+  weights:
+    text: 0.5
+    audio: 0.25
+    video: 0.25
+
+logging:
+  enabled: true
+  db_path: "logs/sentiment_predictions.json"
+  export_format: "json"
+  retention_days: 30
+
+api:
+  host: "127.0.0.1"
+  port: 8000
+  cors_origins: ["*"]
+  max_file_size: 50  # MB
+
+performance:
+  max_video_frames: 150
+  audio_sample_rate: 22050
+  video_frame_skip: 5
