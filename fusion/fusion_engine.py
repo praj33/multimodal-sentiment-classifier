@@ -3,21 +3,62 @@
 from collections import Counter
 
 class FusionEngine:
-    def __init__(self, weights=None):
+    def __init__(self, weights=None, fusion_method='confidence_weighted'):
         """
-        Initialize FusionEngine with optional weights for different modalities
+        Initialize FusionEngine with advanced weighting strategies
         weights: dict with keys 'text', 'audio', 'video' and their respective weights
+        fusion_method: 'simple', 'confidence_weighted', 'adaptive'
         """
-        # Default weights - text is most reliable, then video, then audio
-        self.weights = weights or {
+        # Default base weights - text is most reliable, then video, then audio
+        self.base_weights = weights or {
             'text': 0.5,
             'audio': 0.25,
             'video': 0.25
         }
+        self.fusion_method = fusion_method
+        self.confidence_threshold = 0.7
+        self.uncertainty_penalty = 0.3
+        self.consensus_boost = 0.15
+
+    def calculate_dynamic_weights(self, predictions, modalities):
+        """Calculate dynamic weights based on confidence and consensus"""
+        if self.fusion_method == 'simple':
+            return self.base_weights
+
+        weights = self.base_weights.copy()
+
+        # Confidence-based weight adjustment
+        for i, (sentiment, confidence) in enumerate(predictions):
+            if i < len(modalities):
+                modality = modalities[i]
+
+                # Boost weight for high-confidence predictions
+                if confidence > self.confidence_threshold:
+                    confidence_boost = (confidence - self.confidence_threshold) * 0.5
+                    weights[modality] *= (1 + confidence_boost)
+
+                # Penalize low-confidence predictions
+                elif confidence < 0.5:
+                    uncertainty_penalty = (0.5 - confidence) * self.uncertainty_penalty
+                    weights[modality] *= max(0.1, 1 - uncertainty_penalty)
+
+        # Consensus detection - boost agreeing modalities
+        sentiments = [pred[0] for pred in predictions]
+        if len(set(sentiments)) == 1:  # All agree
+            for modality in weights:
+                if modality in [modalities[i] for i in range(len(predictions))]:
+                    weights[modality] *= (1 + self.consensus_boost)
+
+        # Normalize weights
+        total_weight = sum(weights.values())
+        if total_weight > 0:
+            weights = {k: v/total_weight for k, v in weights.items()}
+
+        return weights
 
     def predict(self, predictions, modalities=None):
         """
-        Predict sentiment using weighted fusion of multiple modalities
+        Predict sentiment using advanced weighted fusion of multiple modalities
 
         Args:
             predictions: list of (sentiment, confidence) tuples
@@ -34,6 +75,9 @@ class FusionEngine:
         if modalities is None:
             modalities = ['text', 'audio', 'video'][:len(predictions)]
 
+        # Calculate dynamic weights based on confidence and consensus
+        dynamic_weights = self.calculate_dynamic_weights(predictions, modalities)
+
         # Calculate weighted scores for each sentiment
         sentiment_scores = {'positive': 0, 'negative': 0, 'neutral': 0}
         total_weight = 0
@@ -41,9 +85,9 @@ class FusionEngine:
         for i, (sentiment, confidence) in enumerate(predictions):
             if i < len(modalities):
                 modality = modalities[i]
-                weight = self.weights.get(modality, 1.0)
+                weight = dynamic_weights.get(modality, 1.0)
 
-                # Weight the confidence by modality weight
+                # Weight the confidence by dynamic modality weight
                 weighted_score = confidence * weight
                 sentiment_scores[sentiment] += weighted_score
                 total_weight += weight

@@ -1,10 +1,12 @@
 # api.py
 
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from input_validation import input_validator
+from streaming_api import add_streaming_routes, STREAMING_TEST_HTML
 from classifiers.text_classifier import TextClassifier
 from classifiers.audio_classifier import AudioClassifier
 from classifiers.video_classifier import VideoClassifier
@@ -250,3 +252,28 @@ def end_session(session_id: str):
     """End a logging session"""
     sentiment_logger.end_session(session_id)
     return {"message": "Session ended", "session_id": session_id}
+
+# Performance benchmarking endpoint
+@app.get("/benchmark/run")
+def run_performance_benchmark():
+    """Run performance benchmark"""
+    try:
+        from model_performance_report import ModelPerformanceBenchmark
+        benchmark = ModelPerformanceBenchmark(api_url="http://localhost:8000")
+        results = benchmark.run_comprehensive_benchmark()
+        return results
+    except Exception as e:
+        return {"error": f"Benchmark failed: {str(e)}"}
+
+# Streaming test page
+@app.get("/streaming/test", response_class=HTMLResponse)
+def get_streaming_test():
+    """Serve streaming test page"""
+    return HTMLResponse(content=STREAMING_TEST_HTML)
+
+# Add streaming routes
+add_streaming_routes(app)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
