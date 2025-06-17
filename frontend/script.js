@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:8000"; // Change to your deployed URL when live
+const API_URL = "http://127.0.0.1:8001"; // Change to your deployed URL when live
 
 // DOM references
 const modeSelect = document.getElementById("mode");

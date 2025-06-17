@@ -2,6 +2,8 @@
 
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from classifiers.text_classifier import TextClassifier
 from classifiers.audio_classifier import AudioClassifier
@@ -45,6 +47,42 @@ class TextInput(BaseModel):
 @app.get("/")
 def root():
     return {"message": "Multimodal Sentiment Classifier API is running."}
+
+# Import the enhanced dashboard HTML
+from multimodal_dashboard import MULTIMODAL_DASHBOARD_HTML
+
+# Serve the enhanced multimodal dashboard
+@app.get("/dashboard", response_class=HTMLResponse)
+def get_dashboard():
+    """Serve the enhanced multimodal dashboard"""
+    return HTMLResponse(content=MULTIMODAL_DASHBOARD_HTML)
+
+# Serve static files (CSS, JS)
+@app.get("/frontend/{file_path}")
+def get_static_file(file_path: str):
+    """Serve static frontend files"""
+    file_location = f"frontend/{file_path}"
+    if os.path.exists(file_location):
+        return FileResponse(file_location)
+    else:
+        return {"error": "File not found"}
+
+# Health check endpoint
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "message": "API is running"}
+
+# Analytics endpoint
+@app.get("/analytics")
+def get_analytics():
+    """Get system analytics"""
+    try:
+        from enhanced_logging import EnhancedSentimentLogger
+        logger = EnhancedSentimentLogger()
+        analytics = logger.get_analytics()
+        return analytics
+    except Exception as e:
+        return {"error": f"Analytics not available: {str(e)}"}
 
 @app.post("/predict/text")
 def predict_text(data: TextInput):
