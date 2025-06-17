@@ -11,7 +11,7 @@ from classifiers.text_classifier import TextClassifier
 from classifiers.audio_classifier import AudioClassifier
 from classifiers.video_classifier import VideoClassifier
 from fusion.fusion_engine import FusionEngine
-from logging_system import sentiment_logger
+from enhanced_logging import EnhancedSentimentLogger
 import os
 import yaml
 import time
@@ -41,6 +41,9 @@ text_model = TextClassifier()
 audio_model = AudioClassifier()
 video_model = VideoClassifier()
 fusion = FusionEngine()
+
+# Initialize enhanced logger
+sentiment_logger = EnhancedSentimentLogger()
 
 # Request model for text
 class TextInput(BaseModel):

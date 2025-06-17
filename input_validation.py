@@ -1,12 +1,23 @@
 # input_validation.py - Enhanced input validation and sanitization
 
 import re
-import magic
 import hashlib
 from typing import Optional, Dict, Any, List
 from fastapi import HTTPException, UploadFile
-import bleach
 import os
+
+# Optional imports with fallbacks
+try:
+    import magic
+    MAGIC_AVAILABLE = True
+except ImportError:
+    MAGIC_AVAILABLE = False
+
+try:
+    import bleach
+    BLEACH_AVAILABLE = True
+except ImportError:
+    BLEACH_AVAILABLE = False
 
 class InputValidator:
     """Enhanced input validation and sanitization"""
@@ -81,8 +92,12 @@ class InputValidator:
                 raise HTTPException(status_code=400, detail="Text contains potentially malicious content")
         
         # Sanitize HTML/script content
-        sanitized_text = bleach.clean(text, tags=[], attributes={}, strip=True)
-        
+        if BLEACH_AVAILABLE:
+            sanitized_text = bleach.clean(text, tags=[], attributes={}, strip=True)
+        else:
+            # Basic HTML tag removal if bleach is not available
+            sanitized_text = re.sub(r'<[^>]+>', '', text)
+
         # Remove excessive whitespace
         sanitized_text = re.sub(r'\s+', ' ', sanitized_text).strip()
         
@@ -127,17 +142,27 @@ class InputValidator:
                 detail=f"File too large. Maximum size: {max_size_mb}MB"
             )
         
-        # Validate MIME type using python-magic
-        try:
-            detected_mime = magic.from_buffer(file_content, mime=True)
-            if detected_mime not in self.ALLOWED_MIME_TYPES[file_type]:
+        # Validate MIME type using python-magic (if available)
+        detected_mime = file.content_type  # Default to browser-provided MIME type
+
+        if MAGIC_AVAILABLE:
+            try:
+                detected_mime = magic.from_buffer(file_content, mime=True)
+                if detected_mime not in self.ALLOWED_MIME_TYPES[file_type]:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"File content doesn't match expected type. Detected: {detected_mime}"
+                    )
+            except Exception as e:
+                # Fallback to browser-provided MIME type
+                detected_mime = file.content_type or "application/octet-stream"
+        else:
+            # Basic validation without python-magic
+            if file.content_type and file.content_type not in self.ALLOWED_MIME_TYPES[file_type]:
                 raise HTTPException(
-                    status_code=400, 
-                    detail=f"File content doesn't match expected type. Detected: {detected_mime}"
+                    status_code=400,
+                    detail=f"File type not allowed: {file.content_type}"
                 )
-        except Exception as e:
-            # Fallback validation if magic fails
-            pass
         
         # Generate file hash for deduplication
         file_hash = hashlib.sha256(file_content).hexdigest()
@@ -202,7 +227,10 @@ class InputValidator:
             # Validate parameter values
             if isinstance(value, str):
                 # Sanitize string values
-                clean_value = bleach.clean(value, tags=[], attributes={}, strip=True)
+                if BLEACH_AVAILABLE:
+                    clean_value = bleach.clean(value, tags=[], attributes={}, strip=True)
+                else:
+                    clean_value = re.sub(r'<[^>]+>', '', value)  # Basic HTML removal
                 clean_value = re.sub(r'[<>"\']', '', clean_value)
                 validated_params[clean_key] = clean_value
             elif isinstance(value, (int, float)):

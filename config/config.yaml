@@ -1,27 +1,97 @@
-model:
-  text: true
-  audio: true
-  video: true
+# Main Configuration for Multimodal Sentiment Classifier
+# This file contains all system configuration settings
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  timeout: 300
+  log_level: "INFO"
+  environment: "production"
+  cors_origins: ["*"]
+  max_file_size: 50  # MB
+
+models:
+  versions:
+    text: "v1.0"
+    audio: "v1.0"
+    video: "v1.0"
+    fusion: "v1.0"
+
+  text:
+    enabled: true
+    model_name: "bert-base-uncased"
+    max_length: 512
+    device: "cpu"
+
+  audio:
+    enabled: true
+    sample_rate: 22050
+    n_mfcc: 13
+    device: "cpu"
+
+  video:
+    enabled: true
+    fps: 30
+    max_frames: 150
+    frame_skip: 5
+    device: "cpu"
 
 fusion:
+  method: "confidence_weighted"  # Options: simple, confidence_weighted, adaptive
+  config_file: "config/fusion_config.yaml"
+  enable_dynamic_weights: true
+  confidence_threshold: 0.7
+  uncertainty_penalty: 0.3
+  consensus_boost: 0.15
   weights:
     text: 0.5
     audio: 0.25
     video: 0.25
+
+validation:
+  file_limits:
+    audio_max_size: 52428800  # 50MB
+    video_max_size: 104857600  # 100MB
+    text_max_length: 10000
+
+  allowed_types:
+    audio: ["wav", "mp3", "ogg", "m4a"]
+    video: ["mp4", "mov", "avi"]
+
+  security:
+    rate_limit_per_minute: 100
+    enable_sanitization: true
+    block_malicious_files: true
+
+database:
+  type: "sqlite"
+  path: "logs/sentiment.db"
+  retention_days: 30
+  enable_analytics: true
 
 logging:
   enabled: true
   db_path: "logs/sentiment_predictions.json"
   export_format: "json"
   retention_days: 30
+  level: "INFO"
 
-api:
-  host: "127.0.0.1"
-  port: 8000
-  cors_origins: ["*"]
-  max_file_size: 50  # MB
+monitoring:
+  enable_metrics: true
+  metrics_port: 9090
+  health_check_interval: 30
+  log_requests: true
 
-performance:
-  max_video_frames: 150
-  audio_sample_rate: 22050
-  video_frame_skip: 5
+security:
+  enable_cors: true
+  allowed_origins: ["*"]
+  enable_rate_limiting: true
+  enable_input_validation: true
+
+deployment:
+  device: "cpu"  # Options: cpu, cuda, auto
+  enable_gpu: false
+  cuda_visible_devices: "0"
+  max_workers: 4
+  worker_timeout: 300

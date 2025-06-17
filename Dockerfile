@@ -1,7 +1,8 @@
 # Dockerfile - Production-ready multimodal sentiment analysis system
+# Multi-stage build for optimized production deployment
 
-# Use Python 3.9 slim image for smaller size
-FROM python:3.9-slim
+# Build stage
+FROM python:3.9-slim as builder
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -10,12 +11,34 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Production stage
+FROM python:3.9-slim as production
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    DEVICE=cpu \
+    ENABLE_GPU=false
+
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
     curl \
     ffmpeg \
     libsndfile1 \
@@ -27,17 +50,22 @@ RUN apt-get update && apt-get install -y \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Set work directory
+WORKDIR /app
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy Python packages from builder
+COPY --from=builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p logs models config
+RUN mkdir -p logs models config dev
+
+# Copy configuration files
+COPY config/ config/
+COPY .env .env
 
 # Set proper permissions
 RUN chmod +x *.py
@@ -54,38 +82,24 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 8000
 
-# Default command
-CMD ["python", "-m", "uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+# Default command - can be overridden for GPU support
+CMD ["python", "-m", "uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
 
-# Multi-stage build for production
-FROM python:3.9-slim as production
+# GPU-enabled stage (optional)
+FROM production as gpu
 
-# Copy from builder stage
-COPY --from=0 /app /app
-COPY --from=0 /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
-COPY --from=0 /usr/local/bin /usr/local/bin
-
-# Install only runtime dependencies
+# Install CUDA dependencies (if needed)
+USER root
 RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    libsndfile1 \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    curl \
+    nvidia-cuda-toolkit \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-
-# Create non-root user
-RUN useradd --create-home --shell /bin/bash app && \
-    chown -R app:app /app
 USER app
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+# Set GPU environment
+ENV DEVICE=cuda
+ENV ENABLE_GPU=true
+ENV CUDA_VISIBLE_DEVICES=0
 
-EXPOSE 8000
-
-# Production command with gunicorn
-CMD ["gunicorn", "api:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--timeout", "300"]
+# GPU command
+CMD ["python", "-m", "uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

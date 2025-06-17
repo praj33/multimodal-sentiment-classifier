@@ -43,3 +43,10 @@ httpx==0.25.2
 gunicorn==21.2.0
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+
+# Input validation dependencies
+python-magic==0.4.27
+bleach==6.1.0
+
+# Environment and configuration
+python-dotenv==1.0.0
