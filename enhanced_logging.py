@@ -13,22 +13,16 @@ import uuid
 class EnhancedSentimentLogger:
     """Enhanced logging system supporting JSON, SQLite, and TinyDB backends"""
     
-    def __init__(self, 
+    def __init__(self,
                  db_type: str = "sqlite",  # json, sqlite, tinydb
                  db_path: str = "logs/sentiment_enhanced.db",
                  json_path: str = "logs/sentiment_predictions.json"):
         self.db_type = db_type
         self.db_path = db_path
         self.json_path = json_path
+
+        # Setup Python logging FIRST
         self.ensure_log_directory()
-        
-        # Initialize database based on type
-        if db_type == "sqlite":
-            self._init_sqlite()
-        elif db_type == "tinydb":
-            self._init_tinydb()
-        
-        # Setup Python logging
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -38,7 +32,19 @@ class EnhancedSentimentLogger:
             ]
         )
         self.logger = logging.getLogger(__name__)
-        self.logger.info(f"Enhanced logging initialized with {db_type} backend")
+
+        # Initialize database based on type AFTER logger is set up
+        try:
+            if db_type == "sqlite":
+                self._init_sqlite()
+            elif db_type == "tinydb":
+                self._init_tinydb()
+
+            self.logger.info(f"Enhanced logging initialized with {db_type} backend")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize logging backend: {e}")
+            # Fallback to basic logging
+            self.db_type = "json"
     
     def ensure_log_directory(self):
         """Ensure logs directory exists"""
