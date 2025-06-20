@@ -27,6 +27,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add security middleware
+@app.middleware("http")
+async def security_middleware(request: Request, call_next):
+    """Basic security middleware"""
+    # Add security headers
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
 # Load config
 def load_config():
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -94,8 +106,14 @@ def predict_text(data: TextInput):
     if not config["models"]["text"]["enabled"]:
         return {"error": "Text model disabled in config"}
 
+    # Validate and sanitize input text
+    try:
+        sanitized_text = input_validator.validate_text_input(data.text)
+    except HTTPException as e:
+        raise e
+
     start_time = time.time()
-    sentiment, score = text_model.predict(data.text)
+    sentiment, score = text_model.predict(sanitized_text)
     processing_time = time.time() - start_time
 
     # Log the prediction
@@ -103,7 +121,7 @@ def predict_text(data: TextInput):
         mode="text",
         result={"sentiment": sentiment, "confidence": score},
         confidence=score,
-        input_content=data.text,
+        input_content=sanitized_text,
         processing_time=processing_time * 1000  # Convert to milliseconds
     )
 
@@ -119,9 +137,16 @@ async def predict_audio(file: UploadFile = File(...)):
     if not config["models"]["audio"]["enabled"]:
         return {"error": "Audio model disabled in config"}
 
+    # Validate uploaded file
+    try:
+        file_info = input_validator.validate_file_upload(file, "audio")
+    except HTTPException as e:
+        raise e
+
     start_time = time.time()
     contents = await file.read()
-    temp_path = f"temp_{file.filename}"
+    safe_filename = input_validator.sanitize_filename(file.filename)
+    temp_path = f"temp_{safe_filename}"
     with open(temp_path, "wb") as f:
         f.write(contents)
 
@@ -150,9 +175,16 @@ async def predict_video(file: UploadFile = File(...)):
     if not config["models"]["video"]["enabled"]:
         return {"error": "Video model disabled in config"}
 
+    # Validate uploaded file
+    try:
+        file_info = input_validator.validate_file_upload(file, "video")
+    except HTTPException as e:
+        raise e
+
     start_time = time.time()
     contents = await file.read()
-    temp_path = f"temp_{file.filename}"
+    safe_filename = input_validator.sanitize_filename(file.filename)
+    temp_path = f"temp_{safe_filename}"
     with open(temp_path, "wb") as f:
         f.write(contents)
 
@@ -178,27 +210,37 @@ async def predict_video(file: UploadFile = File(...)):
 
 @app.post("/predict/multimodal")
 async def predict_multimodal(file: UploadFile = File(...)):
+    # Validate uploaded file (try video first, then audio)
+    try:
+        file_info = input_validator.validate_file_upload(file, "video")
+    except HTTPException:
+        try:
+            file_info = input_validator.validate_file_upload(file, "audio")
+        except HTTPException as e:
+            raise HTTPException(status_code=400, detail="File must be a valid audio or video file")
+
     start_time = time.time()
     results = []
     modalities = []
 
     contents = await file.read()
-    temp_path = f"temp_{file.filename}"
+    safe_filename = input_validator.sanitize_filename(file.filename)
+    temp_path = f"temp_{safe_filename}"
     with open(temp_path, "wb") as f:
         f.write(contents)
 
     # Process each enabled modality
-    if config["model"]["text"]:
+    if config["models"]["text"]["enabled"]:
         sentiment, score = text_model.predict("This is a great example!")  # dummy input for now
         results.append((sentiment, score))
         modalities.append("text")
 
-    if config["model"]["audio"]:
+    if config["models"]["audio"]["enabled"]:
         sentiment, score = audio_model.predict(temp_path)
         results.append((sentiment, score))
         modalities.append("audio")
 
-    if config["model"]["video"]:
+    if config["models"]["video"]["enabled"]:
         sentiment, score = video_model.predict(temp_path)
         results.append((sentiment, score))
         modalities.append("video")
