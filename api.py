@@ -91,7 +91,7 @@ def get_analytics():
 
 @app.post("/predict/text")
 def predict_text(data: TextInput):
-    if not config["model"]["text"]:
+    if not config["models"]["text"]["enabled"]:
         return {"error": "Text model disabled in config"}
 
     start_time = time.time()
@@ -116,7 +116,7 @@ def predict_text(data: TextInput):
 
 @app.post("/predict/audio")
 async def predict_audio(file: UploadFile = File(...)):
-    if not config["model"]["audio"]:
+    if not config["models"]["audio"]["enabled"]:
         return {"error": "Audio model disabled in config"}
 
     start_time = time.time()
@@ -147,7 +147,7 @@ async def predict_audio(file: UploadFile = File(...)):
 
 @app.post("/predict/video")
 async def predict_video(file: UploadFile = File(...)):
-    if not config["model"]["video"]:
+    if not config["models"]["video"]["enabled"]:
         return {"error": "Video model disabled in config"}
 
     start_time = time.time()
