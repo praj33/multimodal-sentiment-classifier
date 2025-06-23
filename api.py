@@ -39,14 +39,15 @@ async def security_middleware(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
-# Load config
-def load_config():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    config_path = os.path.join(base_dir, "config", "config.yaml")
-    with open(config_path, "r") as f:
-        return yaml.safe_load(f)
+# Load config with environment variable support
+from config_loader import get_config_loader
 
-config = load_config()
+config_loader = get_config_loader()
+config = config_loader.get_config()
+
+# Print configuration summary for debugging
+if os.getenv('DEBUG', 'false').lower() == 'true':
+    config_loader.print_config_summary()
 
 # Load models
 text_model = TextClassifier()

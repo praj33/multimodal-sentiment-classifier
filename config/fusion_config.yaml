@@ -1,0 +1,96 @@
+# Fusion Configuration for Multimodal Sentiment Analysis
+# This file contains fusion-specific settings and weights
+
+# Fusion Method Configuration
+fusion:
+  method: "confidence_weighted"  # Options: simple, confidence_weighted, adaptive
+  enable_dynamic_weights: true
+  confidence_threshold: 0.7
+  uncertainty_penalty: 0.3
+  consensus_boost: 0.15
+
+# Static Weights (used when dynamic weights are disabled)
+weights:
+  text: 0.5
+  audio: 0.25
+  video: 0.25
+
+# Dynamic Weight Adjustment Parameters
+dynamic_weights:
+  # Confidence-based weight adjustment
+  confidence_scaling:
+    enabled: true
+    min_confidence: 0.3
+    max_confidence: 0.95
+    scaling_factor: 1.5
+
+  # Consensus-based weight adjustment
+  consensus_scaling:
+    enabled: true
+    agreement_threshold: 0.8
+    disagreement_penalty: 0.2
+    consensus_boost: 0.15
+
+  # Uncertainty handling
+  uncertainty:
+    penalty_factor: 0.3
+    min_weight: 0.1
+    redistribution_method: "proportional"
+
+# Modality-specific Configuration
+modalities:
+  text:
+    enabled: true
+    min_confidence: 0.3
+    weight_range: [0.2, 0.7]
+    fallback_weight: 0.4
+
+  audio:
+    enabled: true
+    min_confidence: 0.2
+    weight_range: [0.1, 0.5]
+    fallback_weight: 0.3
+
+  video:
+    enabled: true
+    min_confidence: 0.2
+    weight_range: [0.1, 0.5]
+    fallback_weight: 0.3
+
+# Fusion Strategies
+strategies:
+  simple:
+    description: "Simple weighted average"
+    normalize_weights: true
+    
+  confidence_weighted:
+    description: "Confidence-based dynamic weighting"
+    use_confidence_scaling: true
+    apply_uncertainty_penalty: true
+    
+  adaptive:
+    description: "Adaptive weighting based on performance"
+    learning_rate: 0.01
+    adaptation_window: 100
+    performance_metric: "accuracy"
+
+# Output Configuration
+output:
+  include_individual_results: true
+  include_confidence_scores: true
+  include_weight_distribution: true
+  round_confidence: 4
+
+# Validation and Quality Control
+validation:
+  min_modalities: 1
+  require_consensus: false
+  consensus_threshold: 0.6
+  fallback_strategy: "highest_confidence"
+
+# Logging and Debugging
+logging:
+  log_fusion_decisions: true
+  log_weight_adjustments: true
+  log_confidence_scores: true
+  debug_mode: false
