@@ -50,51 +50,9 @@ import yaml
 import time
 
 app = FastAPI(
-    title="🎭 Multimodal Sentiment Analysis API",
-    description="""
-    # 🚀 **Enterprise-Grade Multimodal AI Platform**
-
-    A comprehensive, production-ready sentiment analysis system that analyzes emotions from **text**, **audio**, and **video** using state-of-the-art AI models and sophisticated fusion techniques.
-
-    ## 🎯 **Quick Start**
-    - **🌐 Interactive Dashboard**: [/dashboard](/dashboard) - Try the web interface!
-    - **📚 API Documentation**: You're here! Explore the endpoints below
-    - **🔄 Health Check**: [/health](/health) - System status
-
-    ## 🧠 **AI Models**
-    - **📝 Text Analysis**: DistilBERT transformer for natural language understanding
-    - **🎵 Audio Analysis**: MFCC feature extraction with machine learning classification
-    - **🎥 Video Analysis**: MediaPipe facial recognition with emotion detection
-    - **⚡ Fusion Engine**: Advanced confidence weighting and consensus algorithms
-
-    ## 🛡️ **Enterprise Features**
-    - **Security**: XSS protection, file validation, rate limiting (100 req/min)
-    - **Validation**: 50MB file limits, magic number verification, input sanitization
-    - **Monitoring**: Model versioning, performance analytics, health checks
-    - **Deployment**: Docker containerization, multi-cloud support
-
-    ## 👥 **Team Integration Ready**
-    - **Gandhar (Avatar Emotions)**: Optimized for emotional nuance detection
-    - **Vedant/Rishabh (AI Teacher)**: Optimized for educational content analysis
-    - **Shashank (Content Moderation)**: Optimized for safety and content filtering
-
-    ## 📊 **Performance**
-    - **Response Time**: ~100ms average (5x better than target)
-    - **Throughput**: 25+ requests per second
-    - **Accuracy**: 95%+ across all modalities
-    - **Uptime**: 99.9% enterprise-grade reliability
-
-    **🎭 Built with ❤️ by [praj33](https://github.com/praj33) - Ready for production deployment!**
-    """,
-    version="1.0.0",
-    contact={
-        "name": "praj33",
-        "url": "https://github.com/praj33/multimodal_sentiment"
-    },
-    license_info={
-        "name": "MIT License",
-        "url": "https://opensource.org/licenses/MIT"
-    }
+    title="Multimodal Sentiment Analysis API",
+    description="Analyze sentiment from text, audio, and video using AI models. Visit /dashboard for the web interface.",
+    version="1.0.0"
 )
 
 # Day 2: Configure enhanced validation middleware
