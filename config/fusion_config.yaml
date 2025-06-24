@@ -1,13 +1,38 @@
 # Fusion Configuration for Multimodal Sentiment Analysis
-# This file contains fusion-specific settings and weights
+# Day 3: Enhanced runtime control for team customization
+# Teams: Gandhar (avatar emotions), Vedant/Rishabh (AI teacher scoring), Shashank (content moderation)
 
 # Fusion Method Configuration
 fusion:
-  method: "confidence_weighted"  # Options: simple, confidence_weighted, adaptive
+  method: "confidence_weighted"  # Options: simple, confidence_weighted, adaptive, custom
   enable_dynamic_weights: true
   confidence_threshold: 0.7
   uncertainty_penalty: 0.3
   consensus_boost: 0.15
+
+  # Day 3: Runtime reload capability
+  hot_reload: true  # Allow config changes without restart
+  reload_interval: 30  # Check for config changes every 30 seconds
+
+  # Team-specific presets (Day 3)
+  team_presets:
+    gandhar_avatar_emotions:
+      method: "confidence_weighted"
+      weights: {text: 0.3, audio: 0.4, video: 0.3}
+      confidence_threshold: 0.8
+      focus: "emotional_nuance"
+
+    vedant_teacher_scoring:
+      method: "adaptive"
+      weights: {text: 0.6, audio: 0.3, video: 0.1}
+      confidence_threshold: 0.75
+      focus: "content_accuracy"
+
+    shashank_content_moderation:
+      method: "simple"
+      weights: {text: 0.7, audio: 0.2, video: 0.1}
+      confidence_threshold: 0.9
+      focus: "safety_detection"
 
 # Static Weights (used when dynamic weights are disabled)
 weights:
@@ -94,3 +119,121 @@ logging:
   log_weight_adjustments: true
   log_confidence_scores: true
   debug_mode: false
+
+# Day 3: Advanced Runtime Control Features
+runtime_control:
+  # API endpoints for live configuration changes
+  enable_config_api: true
+  config_api_auth: true  # Require authentication for config changes
+
+  # A/B testing support
+  ab_testing:
+    enabled: false
+    test_groups: ["control", "experimental"]
+    traffic_split: [0.5, 0.5]
+    experimental_config:
+      method: "adaptive"
+      weights: {text: 0.4, audio: 0.35, video: 0.25}
+
+  # Performance monitoring
+  monitoring:
+    track_fusion_performance: true
+    performance_window: 1000  # Track last 1000 predictions
+    auto_adjust_weights: false  # Automatically adjust based on performance
+    performance_threshold: 0.85  # Minimum acceptable accuracy
+
+  # Fallback configurations
+  fallback:
+    on_low_confidence: "highest_individual"  # Use best individual model
+    on_disagreement: "text_priority"  # Prioritize text when models disagree
+    on_error: "safe_default"  # Use conservative weights on errors
+
+# Day 3: Custom Fusion Algorithms (for advanced users)
+custom_algorithms:
+  weighted_voting:
+    description: "Weighted voting with confidence scaling"
+    implementation: "built_in"
+    parameters:
+      vote_threshold: 0.6
+      tie_breaker: "confidence"
+
+  ensemble_stacking:
+    description: "Meta-learning ensemble approach"
+    implementation: "external"  # Can be implemented by teams
+    parameters:
+      meta_model: "logistic_regression"
+      cross_validation: true
+
+  attention_fusion:
+    description: "Attention-based fusion mechanism"
+    implementation: "external"
+    parameters:
+      attention_heads: 4
+      temperature: 0.1
+
+# Day 3: Environment-specific Overrides
+environments:
+  development:
+    fusion:
+      method: "simple"
+      enable_dynamic_weights: false
+    logging:
+      debug_mode: true
+      log_fusion_decisions: true
+
+  staging:
+    fusion:
+      method: "confidence_weighted"
+      enable_dynamic_weights: true
+    monitoring:
+      track_fusion_performance: true
+
+  production:
+    fusion:
+      method: "confidence_weighted"
+      hot_reload: false  # Disable hot reload in production
+    monitoring:
+      track_fusion_performance: true
+      auto_adjust_weights: false
+
+# Day 3: Integration Guidelines for Teams
+integration_notes:
+  gandhar_team:
+    focus: "Avatar emotion detection requires high video/audio weight for facial expressions and tone"
+    recommended_preset: "gandhar_avatar_emotions"
+    custom_parameters:
+      - "Increase video weight for facial emotion detection"
+      - "Use confidence_weighted method for nuanced emotions"
+      - "Set consensus_boost to 0.2 for emotional agreement"
+
+  vedant_rishabh_team:
+    focus: "AI teacher scoring prioritizes text content with audio context"
+    recommended_preset: "vedant_teacher_scoring"
+    custom_parameters:
+      - "High text weight (0.6) for content analysis"
+      - "Moderate audio weight (0.3) for engagement detection"
+      - "Use adaptive method for learning improvement"
+
+  shashank_team:
+    focus: "Content moderation requires high precision and text focus"
+    recommended_preset: "shashank_content_moderation"
+    custom_parameters:
+      - "Maximum text weight (0.7) for content analysis"
+      - "High confidence threshold (0.9) for safety"
+      - "Simple method for consistent results"
+
+# Day 3: Configuration Validation Rules
+validation_rules:
+  weights:
+    sum_must_equal_one: true
+    min_weight: 0.0
+    max_weight: 1.0
+
+  confidence_thresholds:
+    min_value: 0.1
+    max_value: 0.99
+
+  method_compatibility:
+    simple: ["static_weights_only"]
+    confidence_weighted: ["dynamic_weights", "confidence_scaling"]
+    adaptive: ["learning_rate", "adaptation_window"]

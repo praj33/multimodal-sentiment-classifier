@@ -1,4 +1,31 @@
-# api.py
+#!/usr/bin/env python3
+"""
+🎭 Multimodal Sentiment Analysis API
+
+A comprehensive, enterprise-grade FastAPI application for analyzing sentiment from text, audio,
+and video inputs using state-of-the-art AI models and sophisticated fusion techniques.
+
+🚀 Features:
+- 📝 Text sentiment analysis using DistilBERT transformer models
+- 🎵 Audio sentiment analysis using MFCC feature extraction
+- 🎥 Video sentiment analysis using MediaPipe facial recognition
+- ⚡ Advanced multimodal fusion with confidence weighting
+- 📡 Real-time streaming analysis with WebSocket support
+- 🌐 Interactive web dashboard with drag-and-drop interface
+- 📊 Performance monitoring and comprehensive analytics
+- 🛡️ Enterprise-grade security with input validation
+- 🐳 Production-ready Docker deployment
+- ⚙️ Runtime configuration with hot-reload capability
+
+👥 Team Integration Ready:
+- Gandhar (Avatar Emotions): Optimized for emotional nuance
+- Vedant/Rishabh (AI Teacher): Optimized for educational content
+- Shashank (Content Moderation): Optimized for safety detection
+
+Author: praj33
+Version: 1.0.0 (Day 3 Complete - Production Ready)
+License: MIT
+"""
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,20 +39,61 @@ from classifiers.audio_classifier import AudioClassifier
 from classifiers.video_classifier import VideoClassifier
 from fusion.fusion_engine import FusionEngine
 from enhanced_logging import EnhancedSentimentLogger
+
+# Day 3: Import configuration and validation modules
+from config_loader import get_config_loader
+from model_versioning import get_version_manager, get_response_formatter
+from validation_middleware import configure_validation_middleware, RequestValidationHelper
+
 import os
 import yaml
 import time
 
-app = FastAPI()
+app = FastAPI(
+    title="Multimodal Sentiment Analysis API",
+    description="""
+    ## Day 2 Enhanced API with Input Validation & Model Versioning
 
-# Enable CORS for frontend (Allow all for development)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow requests from any origin
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    A production-ready sentiment analysis system that processes **text**, **audio**, and **video** inputs
+    using advanced AI models and fusion techniques.
+
+    ### 🔒 Enhanced Validation (Day 2)
+    - **File Size Limit**: Maximum 50MB for all uploads
+    - **Audio Formats**: WAV, MP3, OGG, M4A
+    - **Video Formats**: MP4, MOV, AVI
+    - **Text Sanitization**: Comprehensive XSS and injection protection
+    - **Magic Number Verification**: File content validation
+
+    ### 🏷️ Model Versioning (Day 2)
+    All prediction responses now include model version information:
+    ```json
+    {
+        "sentiment": "positive",
+        "confidence": 0.88,
+        "model_version": {
+            "text": "v1.0",
+            "audio": "v1.0",
+            "video": "v1.0",
+            "fusion": "v1.0"
+        }
+    }
+    ```
+
+    ### 🛡️ Security Features
+    - Rate limiting (100 requests/minute)
+    - Input validation middleware
+    - CORS protection
+    - Security headers
+    """,
+    version="2.0.0",
+    contact={
+        "name": "Multimodal Sentiment API",
+        "email": "support@example.com"
+    }
 )
+
+# Day 2: Configure enhanced validation middleware
+app = configure_validation_middleware(app)
 
 # Add security middleware
 @app.middleware("http")
@@ -40,10 +108,12 @@ async def security_middleware(request: Request, call_next):
     return response
 
 # Load config with environment variable support
-from config_loader import get_config_loader
-
 config_loader = get_config_loader()
 config = config_loader.get_config()
+
+# Initialize model versioning system (Day 2 requirement)
+version_manager = get_version_manager(config_loader)
+response_formatter = get_response_formatter(config_loader)
 
 # Print configuration summary for debugging
 if os.getenv('DEBUG', 'false').lower() == 'true':
@@ -85,10 +155,10 @@ def get_static_file(file_path: str):
     else:
         return {"error": "File not found"}
 
-# Health check endpoint
+# Health check endpoint (Day 2: enhanced with version info)
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "message": "API is running"}
+    return response_formatter.format_health_response()
 
 # Analytics endpoint
 @app.get("/analytics")
@@ -102,7 +172,21 @@ def get_analytics():
     except Exception as e:
         return {"error": f"Analytics not available: {str(e)}"}
 
-@app.post("/predict/text")
+@app.post("/predict/text",
+    summary="Text Sentiment Analysis",
+    description="""
+    Analyze sentiment from text input with enhanced Day 2 validation.
+
+    **Validation Rules:**
+    - Text length: 1-10,000 characters
+    - XSS protection and sanitization applied
+    - Malicious content detection
+
+    **Response includes model versioning (Day 2):**
+    - Model version information for text classifier
+    - Processing time and prediction ID
+    """,
+    response_description="Sentiment prediction with model version info")
 def predict_text(data: TextInput):
     if not config["models"]["text"]["enabled"]:
         return {"error": "Text model disabled in config"}
@@ -126,14 +210,32 @@ def predict_text(data: TextInput):
         processing_time=processing_time * 1000  # Convert to milliseconds
     )
 
-    return {
-        "sentiment": sentiment,
-        "confidence": score,
-        "prediction_id": prediction_id,
-        "processing_time": processing_time
-    }
+    # Day 2: Use new response format with model versioning
+    return response_formatter.format_prediction_response(
+        sentiment=sentiment,
+        confidence=score,
+        used_models=["text"],
+        prediction_id=prediction_id,
+        processing_time=processing_time
+    )
 
-@app.post("/predict/audio")
+@app.post("/predict/audio",
+    summary="Audio Sentiment Analysis",
+    description="""
+    Analyze sentiment from audio files with Day 2 enhanced validation.
+
+    **Supported Formats:** WAV, MP3, OGG, M4A
+    **File Size Limit:** 50MB maximum
+    **Validation Features:**
+    - Magic number verification
+    - File header validation
+    - Content-type checking
+
+    **Response includes model versioning (Day 2):**
+    - Audio model version information
+    - File metadata and processing metrics
+    """,
+    response_description="Audio sentiment prediction with model version info")
 async def predict_audio(file: UploadFile = File(...)):
     if not config["models"]["audio"]["enabled"]:
         return {"error": "Audio model disabled in config"}
@@ -164,14 +266,33 @@ async def predict_audio(file: UploadFile = File(...)):
         processing_time=processing_time * 1000  # Convert to milliseconds
     )
 
-    return {
-        "sentiment": sentiment,
-        "confidence": score,
-        "prediction_id": prediction_id,
-        "processing_time": processing_time
-    }
+    # Day 2: Use new response format with model versioning
+    return response_formatter.format_prediction_response(
+        sentiment=sentiment,
+        confidence=score,
+        used_models=["audio"],
+        prediction_id=prediction_id,
+        processing_time=processing_time,
+        additional_data={"file_info": {"filename": file.filename, "size": len(contents)}}
+    )
 
-@app.post("/predict/video")
+@app.post("/predict/video",
+    summary="Video Sentiment Analysis",
+    description="""
+    Analyze sentiment from video files with Day 2 enhanced validation.
+
+    **Supported Formats:** MP4, MOV, AVI
+    **File Size Limit:** 50MB maximum
+    **Validation Features:**
+    - Magic number verification
+    - File header validation
+    - Content-type checking
+
+    **Response includes model versioning (Day 2):**
+    - Video model version information
+    - File metadata and processing metrics
+    """,
+    response_description="Video sentiment prediction with model version info")
 async def predict_video(file: UploadFile = File(...)):
     if not config["models"]["video"]["enabled"]:
         return {"error": "Video model disabled in config"}
@@ -202,14 +323,36 @@ async def predict_video(file: UploadFile = File(...)):
         processing_time=processing_time * 1000  # Convert to milliseconds
     )
 
-    return {
-        "sentiment": sentiment,
-        "confidence": score,
-        "prediction_id": prediction_id,
-        "processing_time": processing_time
-    }
+    # Day 2: Use new response format with model versioning
+    return response_formatter.format_prediction_response(
+        sentiment=sentiment,
+        confidence=score,
+        used_models=["video"],
+        prediction_id=prediction_id,
+        processing_time=processing_time,
+        additional_data={"file_info": {"filename": file.filename, "size": len(contents)}}
+    )
 
-@app.post("/predict/multimodal")
+@app.post("/predict/multimodal",
+    summary="Multimodal Sentiment Analysis",
+    description="""
+    Analyze sentiment using multiple modalities with advanced fusion techniques.
+
+    **Supported Files:** Audio (WAV, MP3, OGG, M4A) or Video (MP4, MOV, AVI)
+    **File Size Limit:** 50MB maximum
+    **Processing:** Analyzes all applicable modalities and fuses results
+
+    **Day 2 Enhanced Features:**
+    - Comprehensive file validation
+    - Magic number verification
+    - Advanced fusion algorithms
+
+    **Response includes complete model versioning:**
+    - Individual modality versions
+    - Fusion algorithm version
+    - Individual and fused results
+    """,
+    response_description="Multimodal sentiment prediction with complete model version info")
 async def predict_multimodal(file: UploadFile = File(...)):
     # Validate uploaded file (try video first, then audio)
     try:
@@ -271,13 +414,16 @@ async def predict_multimodal(file: UploadFile = File(...)):
         processing_time=processing_time * 1000  # Convert to milliseconds
     )
 
-    return {
-        "fused_sentiment": final_sentiment,
-        "confidence": final_confidence,
-        "individual": individual_results,
-        "prediction_id": prediction_id,
-        "processing_time": processing_time
-    }
+    # Day 2: Use new response format with model versioning
+    used_models = modalities + ["fusion"]  # Include fusion in used models
+    return response_formatter.format_multimodal_response(
+        fused_sentiment=final_sentiment,
+        fused_confidence=final_confidence,
+        individual_results=individual_results,
+        used_models=used_models,
+        prediction_id=prediction_id,
+        processing_time=processing_time
+    )
 
 # Logging and Analytics Endpoints
 @app.get("/analytics/stats")
@@ -320,7 +466,7 @@ def end_session(session_id: str):
 def run_performance_benchmark():
     """Run performance benchmark"""
     try:
-        from model_performance_report import ModelPerformanceBenchmark
+        from dev.scripts.model_performance_report import ModelPerformanceBenchmark
         benchmark = ModelPerformanceBenchmark(api_url="http://localhost:8000")
         results = benchmark.run_comprehensive_benchmark()
         return results

@@ -144,6 +144,7 @@ class FusionEngine:
             modalities = ['text', 'audio', 'video'][:len(predictions)]
 
         # Calculate detailed breakdown
+        dynamic_weights = self.calculate_dynamic_weights(predictions, modalities)
         modality_breakdown = {}
         weighted_scores = {'positive': 0, 'negative': 0, 'neutral': 0}
         total_weight = 0
@@ -151,7 +152,7 @@ class FusionEngine:
         for i, (sentiment, confidence) in enumerate(predictions):
             if i < len(modalities):
                 modality = modalities[i]
-                weight = self.weights.get(modality, 1.0)
+                weight = dynamic_weights.get(modality, 1.0)
                 weighted_score = confidence * weight
 
                 modality_breakdown[modality] = {
