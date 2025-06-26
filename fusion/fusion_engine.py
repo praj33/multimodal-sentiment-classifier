@@ -16,7 +16,7 @@ class FusionEngine:
         self.config_manager = config_manager or FusionConfigManager()
 
         # Load configuration from YAML (Day 3 requirement)
-        config = self.config_manager.get_fusion_config()
+        config = self.config_manager.load_config().get('fusion', {})
 
         # Use config values or fallback to defaults
         self.base_weights = weights or config.get('weights', {
@@ -37,7 +37,7 @@ class FusionEngine:
         weights = self.base_weights.copy()
 
         # Confidence-based weight adjustment
-        for i, (sentiment, confidence) in enumerate(predictions):
+        for i, (_, confidence) in enumerate(predictions):
             if i < len(modalities):
                 modality = modalities[i]
 

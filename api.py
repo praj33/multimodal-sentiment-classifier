@@ -27,7 +27,7 @@ Version: 1.0.0 (Day 3 Complete - Production Ready)
 License: MIT
 """
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -75,8 +75,9 @@ config_loader = get_config_loader()
 config = config_loader.get_config()
 
 # Initialize model versioning system (Day 2 requirement)
-version_manager = get_version_manager(config_loader)
-response_formatter = get_response_formatter(config_loader)
+from model_versioning import ModelVersionManager
+version_manager = ModelVersionManager()
+# response_formatter is now handled by format_api_response functions
 
 # Print configuration summary for debugging
 if os.getenv('DEBUG', 'false').lower() == 'true':
@@ -86,6 +87,10 @@ if os.getenv('DEBUG', 'false').lower() == 'true':
 text_model = TextClassifier()
 audio_model = AudioClassifier()
 video_model = VideoClassifier()
+
+# Initialize fusion engine for advanced analysis
+from fusion.fusion_engine import FusionEngine
+fusion_engine = FusionEngine()
 fusion = FusionEngine()
 
 # Initialize enhanced logger
@@ -121,7 +126,12 @@ def get_static_file(file_path: str):
 # Health check endpoint (Day 2: enhanced with version info)
 @app.get("/health")
 def health_check():
-    return response_formatter.format_health_response()
+    return {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "model_version": version_manager.get_model_version_dict(),
+        "system": "multimodal_sentiment_analysis"
+    }
 
 # Analytics endpoint
 @app.get("/analytics")
@@ -397,7 +407,7 @@ async def predict_audio(file: UploadFile = File(...)):
 
     # Validate uploaded file
     try:
-        file_info = input_validator.validate_file_upload(file, "audio")
+        input_validator.validate_file_upload(file, "audio")
     except HTTPException as e:
         raise e
 
@@ -421,14 +431,14 @@ async def predict_audio(file: UploadFile = File(...)):
         processing_time=processing_time * 1000  # Convert to milliseconds
     )
 
-    # Day 2: Use new response format with model versioning
-    return response_formatter.format_prediction_response(
+    # Day 2: Use EXACT response format with model versioning (CRITICAL requirement)
+    return format_api_response(
         sentiment=sentiment,
         confidence=score,
         used_models=["audio"],
         prediction_id=prediction_id,
-        processing_time=processing_time,
-        additional_data={"file_info": {"filename": file.filename, "size": len(contents)}}
+        processing_time=processing_time * 1000,
+        file_info={"filename": file.filename, "size": len(contents)}
     )
 
 @app.post("/predict/video",
@@ -454,7 +464,7 @@ async def predict_video(file: UploadFile = File(...)):
 
     # Validate uploaded file
     try:
-        file_info = input_validator.validate_file_upload(file, "video")
+        input_validator.validate_file_upload(file, "video")
     except HTTPException as e:
         raise e
 
@@ -478,14 +488,14 @@ async def predict_video(file: UploadFile = File(...)):
         processing_time=processing_time * 1000  # Convert to milliseconds
     )
 
-    # Day 2: Use new response format with model versioning
-    return response_formatter.format_prediction_response(
+    # Day 2: Use EXACT response format with model versioning (CRITICAL requirement)
+    return format_api_response(
         sentiment=sentiment,
         confidence=score,
         used_models=["video"],
         prediction_id=prediction_id,
-        processing_time=processing_time,
-        additional_data={"file_info": {"filename": file.filename, "size": len(contents)}}
+        processing_time=processing_time * 1000,
+        file_info={"filename": file.filename, "size": len(contents)}
     )
 
 @app.post("/predict/multimodal",
@@ -511,11 +521,11 @@ async def predict_video(file: UploadFile = File(...)):
 async def predict_multimodal(file: UploadFile = File(...)):
     # Validate uploaded file (try video first, then audio)
     try:
-        file_info = input_validator.validate_file_upload(file, "video")
+        input_validator.validate_file_upload(file, "video")
     except HTTPException:
         try:
-            file_info = input_validator.validate_file_upload(file, "audio")
-        except HTTPException as e:
+            input_validator.validate_file_upload(file, "audio")
+        except HTTPException:
             raise HTTPException(status_code=400, detail="File must be a valid audio or video file")
 
     start_time = time.time()
@@ -569,15 +579,15 @@ async def predict_multimodal(file: UploadFile = File(...)):
         processing_time=processing_time * 1000  # Convert to milliseconds
     )
 
-    # Day 2: Use new response format with model versioning
+    # Day 2: Use EXACT response format with model versioning (CRITICAL requirement)
     used_models = modalities + ["fusion"]  # Include fusion in used models
-    return response_formatter.format_multimodal_response(
+    return format_multimodal_response(
         fused_sentiment=final_sentiment,
         fused_confidence=final_confidence,
         individual_results=individual_results,
         used_models=used_models,
         prediction_id=prediction_id,
-        processing_time=processing_time
+        processing_time=processing_time * 1000
     )
 
 @app.post("/predict/multimodal/advanced",
@@ -777,7 +787,7 @@ async def predict_multimodal_advanced(
 
     if predictions:
         # Use fusion engine for advanced analysis
-        fused_sentiment, fused_confidence = fusion_engine.fuse_predictions(predictions, modalities)
+        fused_sentiment, fused_confidence = fusion_engine.predict(predictions, modalities)
 
         # Calculate advanced fusion metrics
         fusion_analysis = {
