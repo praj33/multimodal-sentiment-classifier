@@ -1,10 +1,10 @@
-# input_validation.py - Enhanced input validation and sanitization
+# input_validation.py - Day 2 Requirement: Strict input validation and sanitization
 
 import re
 import hashlib
+import os
 from typing import Optional, Dict, Any, List
 from fastapi import HTTPException, UploadFile
-import os
 
 # Optional imports with fallbacks
 try:
@@ -23,25 +23,29 @@ class InputValidator:
     """Enhanced input validation and sanitization"""
     
     def __init__(self):
-        # File size limits (in bytes) - Day 2 requirements: 50MB max
+        # File size limits (in bytes) - Day 2 STRICT requirement: 50MB max
         self.MAX_FILE_SIZES = {
-            'audio': 50 * 1024 * 1024,  # 50MB (Day 2 requirement)
-            'video': 50 * 1024 * 1024,  # 50MB (Day 2 requirement)
+            'audio': 50 * 1024 * 1024,  # 50MB EXACTLY (Day 2 requirement)
+            'video': 50 * 1024 * 1024,  # 50MB EXACTLY (Day 2 requirement)
             'image': 10 * 1024 * 1024,   # 10MB
         }
+
+        # Load from environment if available
+        self.MAX_FILE_SIZES['audio'] = int(os.getenv('MAX_FILE_SIZE_AUDIO', 50 * 1024 * 1024))
+        self.MAX_FILE_SIZES['video'] = int(os.getenv('MAX_FILE_SIZE_VIDEO', 50 * 1024 * 1024))
         
-        # Allowed file types (Day 2 requirements: audio: wav/mp3/ogg, video: mp4/mov)
+        # Allowed file types (Day 2 STRICT requirements: audio: wav/mp3/ogg, video: mp4/mov)
         self.ALLOWED_MIME_TYPES = {
             'audio': [
-                'audio/wav', 'audio/wave', 'audio/x-wav',  # WAV
-                'audio/mpeg', 'audio/mp3',                 # MP3
-                'audio/ogg', 'audio/ogg; codecs=vorbis',   # OGG
-                'audio/mp4', 'audio/m4a'                   # M4A (additional support)
+                'audio/wav', 'audio/wave', 'audio/x-wav',  # WAV (Day 2 required)
+                'audio/mpeg', 'audio/mp3',                 # MP3 (Day 2 required)
+                'audio/ogg', 'audio/ogg; codecs=vorbis',   # OGG (Day 2 required)
+                'audio/mp4', 'audio/m4a'                   # M4A (additional)
             ],
             'video': [
-                'video/mp4', 'video/mpeg',                 # MP4
-                'video/quicktime',                         # MOV
-                'video/x-msvideo', 'video/avi'             # AVI (additional support)
+                'video/mp4', 'video/mpeg',                 # MP4 (Day 2 required)
+                'video/quicktime',                         # MOV (Day 2 required)
+                'video/x-msvideo', 'video/avi'             # AVI (additional)
             ],
             'image': [
                 'image/jpeg', 'image/jpg', 'image/png',
@@ -49,15 +53,15 @@ class InputValidator:
             ]
         }
 
-        # Allowed file extensions (Day 2 requirements: strict compliance)
+        # Allowed file extensions (Day 2 STRICT requirements)
         self.ALLOWED_EXTENSIONS = {
-            'audio': ['.wav', '.mp3', '.ogg', '.m4a'],     # Day 2: wav/mp3/ogg + m4a
-            'video': ['.mp4', '.mov', '.avi'],             # Day 2: mp4/mov + avi
+            'audio': ['.wav', '.mp3', '.ogg', '.m4a'],     # Day 2: wav/mp3/ogg REQUIRED + m4a
+            'video': ['.mp4', '.mov', '.avi'],             # Day 2: mp4/mov REQUIRED + avi
             'image': ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
         }
-        
-        # Text validation limits
-        self.MAX_TEXT_LENGTH = 10000
+
+        # Text validation limits (Day 2 requirement: sanitize text length)
+        self.MAX_TEXT_LENGTH = int(os.getenv('MAX_TEXT_LENGTH', 10000))
         self.MIN_TEXT_LENGTH = 1
         
         # Malicious patterns to detect

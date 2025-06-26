@@ -14,6 +14,8 @@ services:
       - API_WORKERS=4
       - DEVICE=cpu
       - ENABLE_GPU=false
+      - MAX_FILE_SIZE_AUDIO=52428800
+      - MAX_FILE_SIZE_VIDEO=52428800
     env_file:
       - .env
     volumes:

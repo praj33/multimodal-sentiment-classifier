@@ -1,24 +1,33 @@
 # fusion/fusion_engine.py
+# Day 3 CRITICAL requirement: Dynamic config integration
 
 from collections import Counter
+from fusion_config_manager import FusionConfigManager
 
 class FusionEngine:
-    def __init__(self, weights=None, fusion_method='confidence_weighted'):
+    def __init__(self, weights=None, fusion_method='confidence_weighted', config_manager=None):
         """
-        Initialize FusionEngine with advanced weighting strategies
+        Initialize FusionEngine with Day 3 dynamic configuration
         weights: dict with keys 'text', 'audio', 'video' and their respective weights
         fusion_method: 'simple', 'confidence_weighted', 'adaptive'
+        config_manager: FusionConfigManager for runtime config (Day 3 requirement)
         """
-        # Default base weights - text is most reliable, then video, then audio
-        self.base_weights = weights or {
-            'text': 0.5,
-            'audio': 0.25,
+        # Day 3: Initialize config manager for runtime control
+        self.config_manager = config_manager or FusionConfigManager()
+
+        # Load configuration from YAML (Day 3 requirement)
+        config = self.config_manager.get_fusion_config()
+
+        # Use config values or fallback to defaults
+        self.base_weights = weights or config.get('weights', {
+            'text': 0.4,
+            'audio': 0.35,
             'video': 0.25
-        }
-        self.fusion_method = fusion_method
-        self.confidence_threshold = 0.7
-        self.uncertainty_penalty = 0.3
-        self.consensus_boost = 0.15
+        })
+        self.fusion_method = fusion_method or config.get('method', 'confidence_weighted')
+        self.confidence_threshold = config.get('confidence_threshold', 0.7)
+        self.uncertainty_penalty = config.get('uncertainty_penalty', 0.3)
+        self.consensus_boost = config.get('consensus_boost', 0.15)
 
     def calculate_dynamic_weights(self, predictions, modalities):
         """Calculate dynamic weights based on confidence and consensus"""

@@ -671,6 +671,208 @@ All API responses now include model version information:
 - [📖 API Reference](http://localhost:8000/docs)
 - [🎯 Team-Specific Examples](docs/team_integration/)
 
+## 📡 **API Routes and Payloads**
+
+### **🔗 Core Endpoints**
+
+| Endpoint | Method | Description | Day 2 Model Versioning |
+|----------|--------|-------------|-------------------------|
+| `/predict/text` | POST | Text sentiment analysis | ✅ Included |
+| `/predict/audio` | POST | Audio sentiment analysis | ✅ Included |
+| `/predict/video` | POST | Video sentiment analysis | ✅ Included |
+| `/predict/multimodal` | POST | Combined analysis | ✅ Included |
+| `/health` | GET | System health check | ✅ Included |
+| `/dashboard` | GET | Interactive web interface | N/A |
+
+### **📝 Text Analysis Endpoint**
+
+```bash
+curl -X POST "http://localhost:8000/predict/text" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "I love this amazing product!"
+  }'
+```
+
+**Day 2 Response Format (EXACT requirement):**
+```json
+{
+  "sentiment": "positive",
+  "confidence": 0.88,
+  "model_version": {
+    "text": "v1.0",
+    "audio": "v1.0",
+    "video": "v1.0",
+    "fusion": "v1.0"
+  },
+  "processing_time": 123.45,
+  "prediction_id": "pred_abc123"
+}
+```
+
+### **🎵 Audio Analysis Endpoint**
+
+```bash
+curl -X POST "http://localhost:8000/predict/audio" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@audio_sample.wav"
+```
+
+**Day 2 File Requirements:**
+- **Formats**: WAV, MP3, OGG, M4A
+- **Size Limit**: 50MB maximum
+- **Validation**: Magic number verification
+
+### **🎥 Video Analysis Endpoint**
+
+```bash
+curl -X POST "http://localhost:8000/predict/video" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@video_sample.mp4"
+```
+
+**Day 2 File Requirements:**
+- **Formats**: MP4, MOV, AVI
+- **Size Limit**: 50MB maximum
+- **Validation**: Magic number verification
+
+### **🎭 Multimodal Analysis Endpoint**
+
+```bash
+curl -X POST "http://localhost:8000/predict/multimodal" \
+  -H "Content-Type: multipart/form-data" \
+  -F "text=I love this product!" \
+  -F "audio=@audio.wav" \
+  -F "video=@video.mp4"
+```
+
+**Day 2 Response with Model Versioning:**
+```json
+{
+  "sentiment": "positive",
+  "confidence": 0.85,
+  "individual": [
+    {"modality": "text", "sentiment": "positive", "confidence": 0.9},
+    {"modality": "audio", "sentiment": "neutral", "confidence": 0.7},
+    {"modality": "video", "sentiment": "positive", "confidence": 0.8}
+  ],
+  "model_version": {
+    "text": "v1.0",
+    "audio": "v1.0",
+    "video": "v1.0",
+    "fusion": "v1.0"
+  }
+}
+```
+
+## ⚙️ **Fusion Configuration (Day 3 Requirement)**
+
+### **🔧 How Gandhar/Karthikeya Can Adjust Fusion Logic**
+
+**Day 3 CRITICAL Feature**: Modify fusion weights without code changes!
+
+#### **📝 Edit `config/fusion_config.yaml`:**
+
+```yaml
+# Fusion Configuration - Day 3 requirement
+fusion:
+  method: "confidence_weighted"
+
+  # ADJUST THESE WEIGHTS FOR YOUR USE CASE
+  weights:
+    text: 0.4      # Increase for text-heavy applications
+    audio: 0.35    # Increase for voice/speech analysis
+    video: 0.25    # Increase for visual emotion detection
+
+  # Team-specific presets
+  team_presets:
+    gandhar_avatar_emotions:
+      weights: {text: 0.3, audio: 0.4, video: 0.3}
+      confidence_threshold: 0.8
+
+    vedant_teacher_scoring:
+      weights: {text: 0.5, audio: 0.3, video: 0.2}
+      confidence_threshold: 0.7
+
+    shashank_content_moderation:
+      weights: {text: 0.6, audio: 0.2, video: 0.2}
+      confidence_threshold: 0.9
+```
+
+#### **🔄 Hot Reload (30 seconds)**
+- Changes apply automatically without restart
+- No code deployment needed
+- Perfect for A/B testing different weights
+
+#### **🎯 Team Usage Examples:**
+
+**For Gandhar (Avatar Emotions):**
+```bash
+# Use avatar emotions preset
+curl -X POST "http://localhost:8000/config/preset/gandhar_avatar_emotions"
+```
+
+**For Vedant/Rishabh (AI Teacher):**
+```bash
+# Use teacher scoring preset
+curl -X POST "http://localhost:8000/config/preset/vedant_teacher_scoring"
+```
+
+**For Shashank (Content Moderation):**
+```bash
+# Use content moderation preset
+curl -X POST "http://localhost:8000/config/preset/shashank_content_moderation"
+```
+
+## 📦 **SDK Usage**
+
+### **🐍 Python SDK**
+
+```python
+from multimodal_sentiment_sdk import MultimodalSentimentClient
+
+# Initialize client
+client = MultimodalSentimentClient(base_url="http://localhost:8000")
+
+# Text analysis
+result = client.analyze_text("I love this product!")
+print(f"Sentiment: {result['sentiment']}")
+print(f"Confidence: {result['confidence']}")
+print(f"Model Version: {result['model_version']}")
+
+# Audio analysis
+with open("audio.wav", "rb") as f:
+    result = client.analyze_audio(f)
+
+# Video analysis
+with open("video.mp4", "rb") as f:
+    result = client.analyze_video(f)
+
+# Multimodal analysis
+result = client.analyze_multimodal(
+    text="Great product!",
+    audio_file="audio.wav",
+    video_file="video.mp4"
+)
+```
+
+### **📱 JavaScript SDK**
+
+```javascript
+import { MultimodalSentimentClient } from 'multimodal-sentiment-sdk';
+
+const client = new MultimodalSentimentClient('http://localhost:8000');
+
+// Text analysis
+const result = await client.analyzeText('I love this product!');
+console.log('Sentiment:', result.sentiment);
+console.log('Model Version:', result.model_version);
+
+// File upload analysis
+const audioFile = document.getElementById('audio-input').files[0];
+const audioResult = await client.analyzeAudio(audioFile);
+```
+
 ## 🐳 **Docker Deployment**
 
 <div align="center">
@@ -683,22 +885,55 @@ All API responses now include model version information:
 
 </div>
 
-### 🚀 **Quick Deploy**
+### 🚀 **Step-by-Step Docker Deployment**
+
+#### **📋 Prerequisites**
+```bash
+# Install Docker and Docker Compose
+sudo apt update
+sudo apt install docker.io docker-compose
+
+# Verify installation
+docker --version
+docker-compose --version
+```
+
+#### **🔧 Day 1 Requirement: Complete Docker Setup**
 
 <details>
 <summary><b>🐳 Docker Compose (Recommended)</b></summary>
 
 ```bash
-# 🚀 One-command deployment
+# 1. Clone repository
+git clone https://github.com/praj33/multimodal-sentiment-classifier.git
+cd multimodal-sentiment-classifier
+
+# 2. Configure environment (Day 1 requirement)
+cp .env.example .env
+# Edit .env file for your environment:
+# - Set ENABLE_GPU=true for GPU support
+# - Adjust file size limits
+# - Configure model versions
+
+# 3. Build and deploy (Day 1 deliverable)
 docker-compose up --build -d
 
-# 📊 Check status
+# 4. Verify deployment
+curl http://localhost:8000/health
+curl http://localhost:8000/docs
+
+# 5. Test with sample data
+curl -X POST "http://localhost:8000/predict/text" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "I love this product!"}'
+
+# 6. Check status
 docker-compose ps
 
-# 📋 View logs
+# 7. View logs
 docker-compose logs -f
 
-# 🛑 Stop services
+# 8. Stop services
 docker-compose down
 ```
 

@@ -1,5 +1,6 @@
 # Fusion Configuration for Multimodal Sentiment Analysis
-# Day 3: Enhanced runtime control for team customization
+# Day 3 CRITICAL requirement: Runtime configuration without code changes
+# This file allows Gandhar/Karthikeya to modify fusion logic without touching code
 # Teams: Gandhar (avatar emotions), Vedant/Rishabh (AI teacher scoring), Shashank (content moderation)
 
 # Fusion Method Configuration

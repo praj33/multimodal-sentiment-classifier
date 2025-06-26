@@ -1,55 +1,110 @@
 #!/usr/bin/env python3
 """
-Model Versioning System for Multimodal Sentiment Analysis
-Day 2 requirement: Add model versioning to all API responses
+Model Versioning System - Day 2 CRITICAL Requirement
+Implements the EXACT JSON structure required in feedback:
+
+{
+  "sentiment": "positive",
+  "confidence": 0.88,
+  "model_version": {
+    "text": "v1.0",
+    "audio": "v1.0",
+    "video": "v1.0",
+    "fusion": "v1.0"
+  }
+}
 """
 
 import os
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime
-from pathlib import Path
 
 class ModelVersionManager:
-    """Manages model versions and metadata for API responses"""
-    
-    def __init__(self, config_loader=None):
-        self.config_loader = config_loader
-        self._version_cache = {}
-        self._load_model_versions()
-        
-    def _load_model_versions(self):
-        """Load model versions from configuration"""
-        # Default versions (Day 2 requirement)
-        self._version_cache = {
-            "text": "v1.0",
-            "audio": "v1.0", 
-            "video": "v1.0",
-            "fusion": "v1.0"
+    """Manages model versions for API responses - Day 2 requirement"""
+
+    def __init__(self):
+        # Day 2 EXACT requirement: these version tags MUST appear in responses
+        self.model_versions = {
+            "text": os.getenv('TEXT_MODEL_VERSION', 'v1.0'),
+            "audio": os.getenv('AUDIO_MODEL_VERSION', 'v1.0'),
+            "video": os.getenv('VIDEO_MODEL_VERSION', 'v1.0'),
+            "fusion": os.getenv('FUSION_MODEL_VERSION', 'v1.0')
         }
-        
-        # Try to load from config if available
-        if self.config_loader:
-            try:
-                config = self.config_loader.get_config()
-                model_versions = config.get('models', {}).get('versions', {})
-                if model_versions:
-                    self._version_cache.update(model_versions)
-            except Exception:
-                pass  # Use defaults if config loading fails
-                
-        # Try to load from environment variables (Docker override)
-        env_versions = {
-            "text": os.getenv('TEXT_MODEL_VERSION'),
-            "audio": os.getenv('AUDIO_MODEL_VERSION'),
-            "video": os.getenv('VIDEO_MODEL_VERSION'),
-            "fusion": os.getenv('FUSION_MODEL_VERSION')
-        }
-        
-        for model_type, version in env_versions.items():
-            if version:
-                self._version_cache[model_type] = version
-                
+
+    def get_model_version_dict(self, used_models: List[str] = None) -> Dict[str, str]:
+        """
+        Get model version dictionary for API responses
+        Day 2 requirement: EXACT format specified in feedback
+        """
+        if used_models is None:
+            # Return all versions
+            return {
+                "text": self.model_versions["text"],
+                "audio": self.model_versions["audio"],
+                "video": self.model_versions["video"],
+                "fusion": self.model_versions["fusion"]
+            }
+        else:
+            # Return only versions for models that were used
+            version_dict = {}
+            for model in used_models:
+                if model in self.model_versions:
+                    version_dict[model] = self.model_versions[model]
+            return version_dict
+
+def format_api_response(sentiment: str, confidence: float, used_models: List[str], **kwargs) -> Dict[str, Any]:
+    """
+    Format API response with EXACT Day 2 structure
+    This is the CRITICAL missing piece from feedback
+    """
+    version_manager = ModelVersionManager()
+
+    # Day 2 EXACT format requirement
+    response = {
+        "sentiment": sentiment,
+        "confidence": round(confidence, 2),
+        "model_version": version_manager.get_model_version_dict(used_models)
+    }
+
+    # Add any additional fields
+    for key, value in kwargs.items():
+        if key not in response:  # Don't override core fields
+            response[key] = value
+
+    return response
+
+def format_multimodal_response(
+    fused_sentiment: str,
+    fused_confidence: float,
+    individual_results: List[Dict],
+    used_models: List[str],
+    **kwargs
+) -> Dict[str, Any]:
+    """Format multimodal response with Day 2 version structure"""
+    version_manager = ModelVersionManager()
+
+    response = {
+        "sentiment": fused_sentiment,  # Use 'sentiment' not 'fused_sentiment' for consistency
+        "confidence": round(fused_confidence, 2),
+        "individual": individual_results,
+        "model_version": version_manager.get_model_version_dict(used_models)
+    }
+
+    # Add any additional fields
+    for key, value in kwargs.items():
+        if key not in response:
+            response[key] = value
+
+    return response
+
+# Global instance
+_version_manager = ModelVersionManager()
+
+def get_version_manager() -> ModelVersionManager:
+    """Get global version manager instance"""
+    return _version_manager
+
     def get_model_version(self, model_type: str) -> str:
         """Get version for a specific model type"""
         return self._version_cache.get(model_type, "v1.0")

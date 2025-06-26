@@ -72,8 +72,9 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p logs models config dev
 
-# Ensure .env file exists (create default if missing)
-RUN if [ ! -f .env ]; then cp .env .env.example 2>/dev/null || echo "# Default environment file" > .env; fi
+# Copy .env file and ensure it exists
+COPY .env .env.example* ./
+RUN if [ ! -f .env ]; then cp .env.example .env 2>/dev/null || echo "# Default environment file\nDEVICE=cpu\nENABLE_GPU=false" > .env; fi
 
 # Set proper permissions
 RUN chmod +x *.py

@@ -40,9 +40,9 @@ from classifiers.video_classifier import VideoClassifier
 from fusion.fusion_engine import FusionEngine
 from enhanced_logging import EnhancedSentimentLogger
 
-# Day 3: Import configuration and validation modules
+# Day 2-3: Import configuration and validation modules
 from config_loader import get_config_loader
-from model_versioning import get_version_manager, get_response_formatter
+from model_versioning import format_api_response, format_multimodal_response, get_version_manager
 from validation_middleware import configure_validation_middleware, RequestValidationHelper
 
 import os
@@ -173,13 +173,13 @@ def predict_text(data: TextInput):
         processing_time=processing_time * 1000  # Convert to milliseconds
     )
 
-    # Day 2: Use new response format with model versioning
-    return response_formatter.format_prediction_response(
+    # Day 2: Use EXACT response format with model versioning (CRITICAL requirement)
+    return format_api_response(
         sentiment=sentiment,
         confidence=score,
         used_models=["text"],
         prediction_id=prediction_id,
-        processing_time=processing_time
+        processing_time=processing_time * 1000
     )
 
 @app.post("/predict/audio",
