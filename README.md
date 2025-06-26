@@ -675,16 +675,19 @@ All API responses now include model version information:
 
 ### **🔗 Core Endpoints**
 
-| Endpoint | Method | Description | Day 2 Model Versioning |
-|----------|--------|-------------|-------------------------|
-| `/predict/text` | POST | Text sentiment analysis | ✅ Included |
-| `/predict/audio` | POST | Audio sentiment analysis | ✅ Included |
-| `/predict/video` | POST | Video sentiment analysis | ✅ Included |
-| `/predict/multimodal` | POST | Combined analysis | ✅ Included |
-| `/health` | GET | System health check | ✅ Included |
-| `/dashboard` | GET | Interactive web interface | N/A |
+| Endpoint | Method | Description | Analysis Level | Model Versioning |
+|----------|--------|-------------|----------------|------------------|
+| `/predict/text` | POST | Basic text sentiment analysis | **Basic** | ✅ Included |
+| `/predict/text/advanced` | POST | **🧠 Advanced text + emotion detection** | **Advanced** | ✅ Included |
+| `/predict/emotions` | POST | **🎭 Pure emotion detection** | **Advanced** | ✅ Included |
+| `/predict/audio` | POST | Audio sentiment analysis | **Basic** | ✅ Included |
+| `/predict/video` | POST | Video sentiment analysis | **Basic** | ✅ Included |
+| `/predict/multimodal` | POST | Combined analysis | **Basic** | ✅ Included |
+| `/predict/multimodal/advanced` | POST | **🚀 Enterprise multimodal + fusion insights** | **Advanced** | ✅ Included |
+| `/health` | GET | System health check | N/A | ✅ Included |
+| `/dashboard` | GET | Interactive web interface | N/A | N/A |
 
-### **📝 Text Analysis Endpoint**
+### **📝 Basic Text Analysis Endpoint**
 
 ```bash
 curl -X POST "http://localhost:8000/predict/text" \
@@ -694,7 +697,7 @@ curl -X POST "http://localhost:8000/predict/text" \
   }'
 ```
 
-**Day 2 Response Format (EXACT requirement):**
+**Basic Response Format:**
 ```json
 {
   "sentiment": "positive",
@@ -707,6 +710,91 @@ curl -X POST "http://localhost:8000/predict/text" \
   },
   "processing_time": 123.45,
   "prediction_id": "pred_abc123"
+}
+```
+
+### **🧠 Advanced Text Analysis Endpoint**
+
+```bash
+curl -X POST "http://localhost:8000/predict/text/advanced" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "I am absolutely thrilled and excited about this incredible new feature!"
+  }'
+```
+
+**Advanced Response Format (Comprehensive):**
+```json
+{
+  "sentiment": "positive",
+  "confidence": 0.92,
+  "model_version": {
+    "text": "v1.0",
+    "audio": "v1.0",
+    "video": "v1.0",
+    "fusion": "v1.0"
+  },
+  "emotions": {
+    "joy": 0.85,
+    "excitement": 0.78,
+    "satisfaction": 0.72,
+    "enthusiasm": 0.68
+  },
+  "intensity": "high",
+  "emotional_context": {
+    "dominant_emotion": "joy",
+    "secondary_emotion": "excitement",
+    "emotional_stability": 0.82
+  },
+  "advanced_metrics": {
+    "emotional_complexity": 0.45,
+    "sentiment_strength": 0.92,
+    "emotional_consistency": 0.82
+  },
+  "psychological_insights": {
+    "emotional_range": 4,
+    "primary_emotion_strength": 0.85,
+    "emotional_balance": 0.45
+  },
+  "analysis_type": "advanced"
+}
+```
+
+### **🎭 Pure Emotion Detection Endpoint**
+
+```bash
+curl -X POST "http://localhost:8000/predict/emotions" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "I feel a mix of anxiety and hope about the upcoming presentation."
+  }'
+```
+
+**Emotion-Focused Response:**
+```json
+{
+  "sentiment": "anxiety",
+  "confidence": 0.73,
+  "emotions": {
+    "anxiety": 0.73,
+    "hope": 0.68,
+    "nervousness": 0.45,
+    "anticipation": 0.42
+  },
+  "emotion_ranking": [
+    ["anxiety", 0.73],
+    ["hope", 0.68],
+    ["nervousness", 0.45],
+    ["anticipation", 0.42]
+  ],
+  "intensity": "medium",
+  "emotion_summary": {
+    "primary_emotion": "anxiety",
+    "emotion_count": 4,
+    "strongest_emotion_score": 0.73,
+    "emotional_diversity": 2
+  },
+  "analysis_type": "emotion_detection"
 }
 ```
 
@@ -736,7 +824,7 @@ curl -X POST "http://localhost:8000/predict/video" \
 - **Size Limit**: 50MB maximum
 - **Validation**: Magic number verification
 
-### **🎭 Multimodal Analysis Endpoint**
+### **🎭 Basic Multimodal Analysis Endpoint**
 
 ```bash
 curl -X POST "http://localhost:8000/predict/multimodal" \
@@ -746,7 +834,7 @@ curl -X POST "http://localhost:8000/predict/multimodal" \
   -F "video=@video.mp4"
 ```
 
-**Day 2 Response with Model Versioning:**
+**Basic Multimodal Response:**
 ```json
 {
   "sentiment": "positive",
@@ -762,6 +850,55 @@ curl -X POST "http://localhost:8000/predict/multimodal" \
     "video": "v1.0",
     "fusion": "v1.0"
   }
+}
+```
+
+### **🚀 Advanced Multimodal Analysis Endpoint**
+
+```bash
+curl -X POST "http://localhost:8000/predict/multimodal/advanced" \
+  -H "Content-Type: multipart/form-data" \
+  -F "text=This presentation was absolutely fantastic!" \
+  -F "audio=@presentation_audio.wav" \
+  -F "video=@presentation_video.mp4"
+```
+
+**Enterprise-Grade Advanced Response:**
+```json
+{
+  "sentiment": "positive",
+  "confidence": 0.88,
+  "individual_analysis": [
+    {
+      "modality": "text",
+      "sentiment": "positive",
+      "confidence": 0.92,
+      "emotions": {"joy": 0.85, "excitement": 0.72},
+      "intensity": "high",
+      "quality_score": 0.95
+    }
+  ],
+  "fusion_analysis": {
+    "fusion_method": "confidence_weighted",
+    "consensus_level": 0.85,
+    "conflict_detected": false,
+    "modality_agreement": {
+      "text_audio": 0.92,
+      "text_video": 0.78,
+      "audio_video": 0.83
+    }
+  },
+  "modality_contributions": {
+    "text": {"weight": 0.45, "influence": 0.52},
+    "audio": {"weight": 0.35, "influence": 0.28},
+    "video": {"weight": 0.20, "influence": 0.20}
+  },
+  "performance_metrics": {
+    "total_processing_time": 1250.5,
+    "modality_timings": {"text": 120.3, "audio": 580.2, "video": 450.8},
+    "quality_scores": {"text": 0.95, "audio": 0.82, "video": 0.88}
+  },
+  "analysis_type": "advanced_multimodal"
 }
 ```
 

@@ -24,9 +24,9 @@ class ModelVersionManager:
     """Manages model versions for API responses - Day 2 requirement"""
 
     def __init__(self):
-        # Day 2 EXACT requirement: these version tags MUST appear in responses
+        # Day 2 EXACT requirement + Advanced Analysis: these version tags MUST appear in responses
         self.model_versions = {
-            "text": os.getenv('TEXT_MODEL_VERSION', 'v1.0'),
+            "text": os.getenv('TEXT_MODEL_VERSION', 'v2.0'),  # Updated to v2.0 for advanced analysis
             "audio": os.getenv('AUDIO_MODEL_VERSION', 'v1.0'),
             "video": os.getenv('VIDEO_MODEL_VERSION', 'v1.0'),
             "fusion": os.getenv('FUSION_MODEL_VERSION', 'v1.0')
