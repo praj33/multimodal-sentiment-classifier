@@ -26,9 +26,9 @@ class FusionConfigManager:
         # Load initial configuration
         self.load_config()
         
-        # Start hot reload if enabled
-        if self.config.get('fusion', {}).get('hot_reload', False):
-            self.start_hot_reload()
+        # Start hot reload if enabled (temporarily disabled for debugging)
+        # if self.config.get('fusion', {}).get('hot_reload', False):
+        #     self.start_hot_reload()
     
     def load_config(self) -> Dict[str, Any]:
         """Load fusion configuration from YAML file"""

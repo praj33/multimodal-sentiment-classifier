@@ -34,9 +34,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from input_validation import input_validator
 from streaming_api import add_streaming_routes, STREAMING_TEST_HTML
-from classifiers.text_classifier import TextClassifier
-from classifiers.audio_classifier import AudioClassifier
-from classifiers.video_classifier import VideoClassifier
+# Classifier imports moved to lazy loading functions to prevent startup hanging
 from fusion.fusion_engine import FusionEngine
 from enhanced_logging import EnhancedSentimentLogger
 
@@ -83,15 +81,51 @@ version_manager = ModelVersionManager()
 if os.getenv('DEBUG', 'false').lower() == 'true':
     config_loader.print_config_summary()
 
-# Load models
-text_model = TextClassifier()
-audio_model = AudioClassifier()
-video_model = VideoClassifier()
+# Initialize models with lazy loading (FIXED: prevents 30+ second startup hanging)
+text_model = None
+audio_model = None
+video_model = None
+fusion_engine = None
 
-# Initialize fusion engine for advanced analysis
-from fusion.fusion_engine import FusionEngine
-fusion_engine = FusionEngine()
-fusion = FusionEngine()
+def get_text_model():
+    """Lazy load text model (takes 15-20 seconds)"""
+    global text_model
+    if text_model is None:
+        print("🧠 Loading TextClassifier (this may take 15-20 seconds)...")
+        from classifiers.text_classifier import TextClassifier
+        text_model = TextClassifier()
+        print("✅ TextClassifier loaded")
+    return text_model
+
+def get_audio_model():
+    """Lazy load audio model"""
+    global audio_model
+    if audio_model is None:
+        print("🎵 Loading AudioClassifier...")
+        from classifiers.audio_classifier import AudioClassifier
+        audio_model = AudioClassifier()
+        print("✅ AudioClassifier loaded")
+    return audio_model
+
+def get_video_model():
+    """Lazy load video model (takes 5-10 seconds)"""
+    global video_model
+    if video_model is None:
+        print("🎥 Loading VideoClassifier (this may take 5-10 seconds)...")
+        from classifiers.video_classifier import VideoClassifier
+        video_model = VideoClassifier()
+        print("✅ VideoClassifier loaded")
+    return video_model
+
+def get_fusion_engine():
+    """Lazy load fusion engine"""
+    global fusion_engine
+    if fusion_engine is None:
+        print("⚡ Loading FusionEngine...")
+        from fusion.fusion_engine import FusionEngine
+        fusion_engine = FusionEngine()
+        print("✅ FusionEngine loaded")
+    return fusion_engine
 
 # Initialize enhanced logger
 sentiment_logger = EnhancedSentimentLogger()
@@ -172,7 +206,7 @@ def predict_text(data: TextInput):
 
     start_time = time.time()
     # Get advanced sentiment analysis result
-    analysis_result = text_model.predict(sanitized_text)
+    analysis_result = get_text_model().predict(sanitized_text)
     processing_time = time.time() - start_time
 
     # Extract basic sentiment and confidence for compatibility
@@ -268,7 +302,7 @@ def predict_text_advanced(data: TextInput):
 
     start_time = time.time()
     # Force advanced analysis
-    analysis_result = text_model.predict(sanitized_text)
+    analysis_result = get_text_model().predict(sanitized_text)
     processing_time = time.time() - start_time
 
     # Ensure we get advanced analysis
@@ -340,7 +374,7 @@ def predict_emotions(data: TextInput):
         raise e
 
     start_time = time.time()
-    analysis_result = text_model.predict(sanitized_text)
+    analysis_result = get_text_model().predict(sanitized_text)
     processing_time = time.time() - start_time
 
     if isinstance(analysis_result, dict) and analysis_result.get('emotions'):
@@ -418,7 +452,7 @@ async def predict_audio(file: UploadFile = File(...)):
     with open(temp_path, "wb") as f:
         f.write(contents)
 
-    sentiment, score = audio_model.predict(temp_path)
+    sentiment, score = get_audio_model().predict(temp_path)
     processing_time = time.time() - start_time
     os.remove(temp_path)
 
@@ -475,7 +509,7 @@ async def predict_video(file: UploadFile = File(...)):
     with open(temp_path, "wb") as f:
         f.write(contents)
 
-    sentiment, score = video_model.predict(temp_path)
+    sentiment, score = get_video_model().predict(temp_path)
     processing_time = time.time() - start_time
     os.remove(temp_path)
 
@@ -545,12 +579,12 @@ async def predict_multimodal(file: UploadFile = File(...)):
         modalities.append("text")
 
     if config["models"]["audio"]["enabled"]:
-        sentiment, score = audio_model.predict(temp_path)
+        sentiment, score = get_audio_model().predict(temp_path)
         results.append((sentiment, score))
         modalities.append("audio")
 
     if config["models"]["video"]["enabled"]:
-        sentiment, score = video_model.predict(temp_path)
+        sentiment, score = get_video_model().predict(temp_path)
         results.append((sentiment, score))
         modalities.append("video")
 
@@ -558,7 +592,7 @@ async def predict_multimodal(file: UploadFile = File(...)):
     processing_time = time.time() - start_time
 
     # Use enhanced fusion with modality information
-    final_sentiment, final_confidence = fusion.predict(results, modalities)
+    final_sentiment, final_confidence = get_fusion_engine().predict(results, modalities)
 
     # Prepare individual results for response
     individual_results = [
@@ -704,7 +738,7 @@ async def predict_multimodal_advanced(
         try:
             file_info = input_validator.validate_file_upload(audio, "audio")
             contents = await audio.read()
-            audio_result = audio_model.predict(contents)
+            audio_result = get_audio_model().predict(contents)
 
             if isinstance(audio_result, dict):
                 individual_results.append({
@@ -744,7 +778,7 @@ async def predict_multimodal_advanced(
         try:
             file_info = input_validator.validate_file_upload(video, "video")
             contents = await video.read()
-            video_result = video_model.predict(contents)
+            video_result = get_video_model().predict(contents)
 
             if isinstance(video_result, dict):
                 individual_results.append({
@@ -787,11 +821,11 @@ async def predict_multimodal_advanced(
 
     if predictions:
         # Use fusion engine for advanced analysis
-        fused_sentiment, fused_confidence = fusion_engine.predict(predictions, modalities)
+        fused_sentiment, fused_confidence = get_fusion_engine().predict(predictions, modalities)
 
         # Calculate advanced fusion metrics
         fusion_analysis = {
-            "fusion_method": fusion_engine.fusion_method,
+            "fusion_method": get_fusion_engine().fusion_method,
             "consensus_level": calculate_consensus_level(predictions),
             "conflict_detected": detect_conflicts(predictions),
             "modality_agreement": calculate_modality_agreement(individual_results),
@@ -799,7 +833,7 @@ async def predict_multimodal_advanced(
         }
 
         # Calculate modality contributions
-        modality_contributions = calculate_modality_contributions(individual_results, fusion_engine.base_weights)
+        modality_contributions = calculate_modality_contributions(individual_results, get_fusion_engine().base_weights)
 
     else:
         fused_sentiment, fused_confidence = "neutral", 0.5
