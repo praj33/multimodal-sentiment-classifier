@@ -23,8 +23,9 @@ from datetime import datetime
 class ModelVersionManager:
     """Manages model versions for API responses - Day 2 requirement"""
 
-    def __init__(self):
+    def __init__(self, config_loader=None):
         # Day 2 EXACT requirement + Advanced Analysis: these version tags MUST appear in responses
+        self.config_loader = config_loader
         self.model_versions = {
             "text": os.getenv('TEXT_MODEL_VERSION', 'v2.0'),  # Updated to v2.0 for advanced analysis
             "audio": os.getenv('AUDIO_MODEL_VERSION', 'v1.0'),
@@ -52,6 +53,48 @@ class ModelVersionManager:
                 if model in self.model_versions:
                     version_dict[model] = self.model_versions[model]
             return version_dict
+
+    def get_model_version(self, model_type: str) -> str:
+        """Get version for a specific model type"""
+        return self.model_versions.get(model_type, "v1.0")
+
+    def get_all_versions(self) -> Dict[str, str]:
+        """Get all model versions"""
+        return self.model_versions.copy()
+
+    def get_version_info(self, model_types: list = None) -> Dict[str, str]:
+        """Get version info for specified model types or all models"""
+        if model_types is None:
+            return self.get_all_versions()
+
+        return {
+            model_type: self.get_model_version(model_type)
+            for model_type in model_types
+        }
+
+    def update_model_version(self, model_type: str, version: str):
+        """Update version for a specific model type"""
+        if model_type in self.model_versions:
+            self.model_versions[model_type] = version
+        else:
+            raise ValueError(f"Unknown model type: {model_type}")
+
+    def get_api_response_versions(self, used_models: list = None) -> Dict[str, str]:
+        """Get model versions formatted for API responses (Day 2 requirement)"""
+        if used_models is None:
+            # Return all versions
+            return {
+                "text": self.get_model_version("text"),
+                "audio": self.get_model_version("audio"),
+                "video": self.get_model_version("video"),
+                "fusion": self.get_model_version("fusion")
+            }
+        else:
+            # Return only versions for models that were actually used
+            versions = {}
+            for model_type in used_models:
+                versions[model_type] = self.get_model_version(model_type)
+            return versions
 
 def format_api_response(sentiment: str, confidence: float, used_models: List[str], **kwargs) -> Dict[str, Any]:
     """
@@ -97,55 +140,6 @@ def format_multimodal_response(
             response[key] = value
 
     return response
-
-# Global instance
-_version_manager = ModelVersionManager()
-
-def get_version_manager() -> ModelVersionManager:
-    """Get global version manager instance"""
-    return _version_manager
-
-    def get_model_version(self, model_type: str) -> str:
-        """Get version for a specific model type"""
-        return self._version_cache.get(model_type, "v1.0")
-        
-    def get_all_versions(self) -> Dict[str, str]:
-        """Get all model versions"""
-        return self._version_cache.copy()
-        
-    def get_version_info(self, model_types: list = None) -> Dict[str, str]:
-        """Get version info for specified model types or all models"""
-        if model_types is None:
-            return self.get_all_versions()
-            
-        return {
-            model_type: self.get_model_version(model_type) 
-            for model_type in model_types
-        }
-        
-    def update_model_version(self, model_type: str, version: str):
-        """Update version for a specific model type"""
-        if model_type in self._version_cache:
-            self._version_cache[model_type] = version
-        else:
-            raise ValueError(f"Unknown model type: {model_type}")
-            
-    def get_api_response_versions(self, used_models: list = None) -> Dict[str, str]:
-        """Get model versions formatted for API responses (Day 2 requirement)"""
-        if used_models is None:
-            # Return all versions
-            return {
-                "text": self.get_model_version("text"),
-                "audio": self.get_model_version("audio"),
-                "video": self.get_model_version("video"),
-                "fusion": self.get_model_version("fusion")
-            }
-        else:
-            # Return only versions for models that were actually used
-            versions = {}
-            for model_type in used_models:
-                versions[model_type] = self.get_model_version(model_type)
-            return versions
             
     def get_detailed_version_info(self) -> Dict[str, Any]:
         """Get detailed version information including metadata"""

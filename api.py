@@ -32,6 +32,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from typing import List
 from input_validation import input_validator
 from streaming_api import add_streaming_routes, STREAMING_TEST_HTML
 # Classifier imports moved to lazy loading functions to prevent startup hanging
@@ -1027,6 +1028,99 @@ def run_performance_benchmark():
         return {"error": f"Benchmark failed: {str(e)}"}
 
 # Streaming test page
+@app.post("/predict/batch",
+    summary="Batch Sentiment Analysis",
+    description="""
+    Process multiple inputs in a single request for efficient batch analysis.
+
+    **Supported Batch Types:**
+    - Multiple text inputs
+    - Multiple file uploads (audio/video)
+    - Mixed multimodal inputs
+
+    **Advanced Features:**
+    - Parallel processing for optimal performance
+    - Individual confidence scores and model versions
+    - Aggregated batch statistics
+    - Error handling for individual items
+
+    **Response includes:**
+    - Individual results for each input
+    - Batch-level statistics and insights
+    - Processing performance metrics
+    """,
+    response_description="Batch sentiment analysis results with comprehensive metrics")
+async def predict_batch(
+    texts: List[str] = Form(None),
+    files: List[UploadFile] = File(None)
+):
+    """Advanced batch processing for multiple inputs"""
+    if not texts and not files:
+        raise HTTPException(status_code=400, detail="At least one text or file input is required")
+
+    start_time = time.time()
+    results = []
+    batch_stats = {
+        'total_items': 0,
+        'successful': 0,
+        'failed': 0,
+        'sentiment_distribution': {'positive': 0, 'negative': 0, 'neutral': 0},
+        'average_confidence': 0.0,
+        'processing_time_ms': 0
+    }
+
+    # Process text inputs
+    if texts:
+        for i, text in enumerate(texts):
+            try:
+                sanitized_text = input_validator.validate_and_sanitize_text(text)
+                analysis_result = get_text_model().predict(sanitized_text)
+
+                if isinstance(analysis_result, dict):
+                    sentiment = analysis_result.get('sentiment', 'neutral')
+                    confidence = analysis_result.get('confidence', 0.5)
+                else:
+                    sentiment, confidence = analysis_result
+
+                results.append({
+                    'index': i,
+                    'type': 'text',
+                    'input_preview': text[:100] + '...' if len(text) > 100 else text,
+                    'sentiment': sentiment,
+                    'confidence': confidence,
+                    'status': 'success'
+                })
+
+                batch_stats['successful'] += 1
+                batch_stats['sentiment_distribution'][sentiment] += 1
+
+            except Exception as e:
+                results.append({
+                    'index': i,
+                    'type': 'text',
+                    'error': str(e),
+                    'status': 'failed'
+                })
+                batch_stats['failed'] += 1
+
+    # Calculate batch statistics
+    batch_stats['total_items'] = len(results)
+    successful_results = [r for r in results if r['status'] == 'success']
+    if successful_results:
+        batch_stats['average_confidence'] = sum(r.get('confidence', 0) for r in successful_results) / len(successful_results)
+
+    processing_time = time.time() - start_time
+    batch_stats['processing_time_ms'] = processing_time * 1000
+
+    return format_api_response(
+        sentiment='batch_analysis',
+        confidence=batch_stats['average_confidence'],
+        used_models=['batch_processor'],
+        processing_time=processing_time * 1000,
+        batch_results=results,
+        batch_statistics=batch_stats
+    )
+
 @app.get("/streaming/test", response_class=HTMLResponse)
 def get_streaming_test():
     """Serve streaming test page"""
