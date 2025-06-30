@@ -122,12 +122,18 @@ Thumbs.db
 # Development Artifacts (Keep repo clean)
 # -----------------------------------------------------------------------------
 debug_*.py
-test_*.py
+# test_*.py  # Commented out to allow important test files
 *_test.py
 *_debug.py
 scratch/
 experiments/
 playground/
+
+# Exclude specific test files that are development artifacts
+test_api_import.py
+test_fastapi.py
+test_fusion_engine.py
+test_startup.py
 
 # Large Files (Use Git LFS if needed)
 # -----------------------------------------------------------------------------
