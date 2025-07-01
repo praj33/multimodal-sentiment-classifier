@@ -37,22 +37,26 @@ class ModelVersionManager:
         """
         Get model version dictionary for API responses
         Day 2 requirement: EXACT format specified in feedback
+        CRITICAL: Always return ALL model versions as required
         """
-        if used_models is None:
-            # Return all versions
-            return {
-                "text": self.model_versions["text"],
-                "audio": self.model_versions["audio"],
-                "video": self.model_versions["video"],
-                "fusion": self.model_versions["fusion"]
-            }
-        else:
-            # Return only versions for models that were used
-            version_dict = {}
-            for model in used_models:
-                if model in self.model_versions:
-                    version_dict[model] = self.model_versions[model]
-            return version_dict
+        # ALWAYS return all versions regardless of which models were used
+        # This matches the exact requirement format:
+        # {
+        #   "sentiment": "positive",
+        #   "confidence": 0.88,
+        #   "model_version": {
+        #     "text": "v1.0",
+        #     "audio": "v1.0",
+        #     "video": "v1.0",
+        #     "fusion": "v1.0"
+        #   }
+        # }
+        return {
+            "text": self.model_versions["text"],
+            "audio": self.model_versions["audio"],
+            "video": self.model_versions["video"],
+            "fusion": self.model_versions["fusion"]
+        }
 
     def get_model_version(self, model_type: str) -> str:
         """Get version for a specific model type"""
@@ -81,20 +85,14 @@ class ModelVersionManager:
 
     def get_api_response_versions(self, used_models: list = None) -> Dict[str, str]:
         """Get model versions formatted for API responses (Day 2 requirement)"""
-        if used_models is None:
-            # Return all versions
-            return {
-                "text": self.get_model_version("text"),
-                "audio": self.get_model_version("audio"),
-                "video": self.get_model_version("video"),
-                "fusion": self.get_model_version("fusion")
-            }
-        else:
-            # Return only versions for models that were actually used
-            versions = {}
-            for model_type in used_models:
-                versions[model_type] = self.get_model_version(model_type)
-            return versions
+        # ALWAYS return all versions regardless of used_models parameter
+        # This ensures consistent API response format as required in feedback
+        return {
+            "text": self.get_model_version("text"),
+            "audio": self.get_model_version("audio"),
+            "video": self.get_model_version("video"),
+            "fusion": self.get_model_version("fusion")
+        }
 
 def format_api_response(sentiment: str, confidence: float, used_models: List[str], **kwargs) -> Dict[str, Any]:
     """
@@ -140,7 +138,10 @@ def format_multimodal_response(
             response[key] = value
 
     return response
-            
+
+class ModelVersionManagerExtended(ModelVersionManager):
+    """Extended version manager with additional functionality"""
+
     def get_detailed_version_info(self) -> Dict[str, Any]:
         """Get detailed version information including metadata"""
         return {

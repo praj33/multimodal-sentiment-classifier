@@ -19,10 +19,11 @@ services:
     env_file:
       - .env
     volumes:
-      - ./logs:/app/logs
-      - ./models:/app/models
-      - ./config:/app/config
-      - ./.env:/app/.env
+      - ./logs:/app/logs:rw
+      - ./models:/app/models:rw
+      - ./config:/app/config:ro
+      - ./.env:/app/.env:ro
+      - ./test_files:/app/test_files:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

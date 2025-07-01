@@ -11,8 +11,8 @@ fusion:
   uncertainty_penalty: 0.3
   consensus_boost: 0.15
 
-  # Day 3: Runtime reload capability (temporarily disabled for debugging)
-  hot_reload: false  # Allow config changes without restart
+  # Day 3: Runtime reload capability
+  hot_reload: true  # Allow config changes without restart
   reload_interval: 30  # Check for config changes every 30 seconds
 
   # Team-specific presets (Day 3)

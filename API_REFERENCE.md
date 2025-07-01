@@ -377,6 +377,53 @@ Get current fusion configuration.
 }
 ```
 
+### **POST /config/fusion/weights**
+Update fusion weights at runtime.
+
+**Request:**
+```json
+{
+  "text": 0.6,
+  "audio": 0.3,
+  "video": 0.1
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Fusion weights updated successfully",
+  "new_weights": {"text": 0.6, "audio": 0.3, "video": 0.1},
+  "timestamp": 1719840000.0
+}
+```
+
+### **POST /config/fusion/method**
+Change fusion algorithm at runtime.
+
+**Request:**
+```json
+{
+  "method": "confidence_weighted"
+}
+```
+
+**Available Methods:**
+- `simple`: Basic weighted average
+- `confidence_weighted`: Dynamic confidence-based weighting
+- `adaptive`: Adaptive learning-based fusion
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Fusion method updated to 'confidence_weighted'",
+  "new_method": "confidence_weighted",
+  "timestamp": 1719840000.0
+}
+```
+
 ### **POST /config/fusion/preset/{team_name}**
 Apply team-specific configuration preset.
 
@@ -386,12 +433,61 @@ Apply team-specific configuration preset.
 **Response:**
 ```json
 {
-  "success": true,
-  "message": "Applied preset for gandhar_avatar_emotions",
-  "new_config": {
+  "status": "success",
+  "message": "Applied configuration preset for team 'gandhar_avatar_emotions'",
+  "team": "gandhar_avatar_emotions",
+  "applied_config": {
     "method": "confidence_weighted",
-    "weights": {"text": 0.3, "audio": 0.4, "video": 0.3}
-  }
+    "weights": {"text": 0.3, "audio": 0.4, "video": 0.3},
+    "confidence_threshold": 0.8
+  },
+  "timestamp": 1719840000.0
+}
+```
+
+### **GET /config/fusion/presets**
+List all available team configuration presets.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "presets": {
+    "gandhar_avatar_emotions": {
+      "method": "confidence_weighted",
+      "weights": {"text": 0.3, "audio": 0.4, "video": 0.3},
+      "confidence_threshold": 0.8,
+      "focus": "emotional_nuance"
+    },
+    "vedant_teacher_scoring": {
+      "method": "adaptive",
+      "weights": {"text": 0.6, "audio": 0.3, "video": 0.1},
+      "confidence_threshold": 0.75,
+      "focus": "content_accuracy"
+    },
+    "shashank_content_moderation": {
+      "method": "simple",
+      "weights": {"text": 0.7, "audio": 0.2, "video": 0.1},
+      "confidence_threshold": 0.9,
+      "focus": "safety_detection"
+    }
+  },
+  "count": 3,
+  "timestamp": 1719840000.0
+}
+```
+
+### **POST /config/fusion/reload**
+Manually reload configuration from file.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Fusion configuration reloaded successfully",
+  "config_timestamp": 1719840000.0,
+  "current_method": "confidence_weighted",
+  "current_weights": {"text": 0.5, "audio": 0.25, "video": 0.25}
 }
 ```
 

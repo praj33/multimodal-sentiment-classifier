@@ -8,7 +8,8 @@ try:
     FULL_VIDEO_AVAILABLE = True
 except ImportError:
     FULL_VIDEO_AVAILABLE = False
-    print("[VideoClassifier] Full video dependencies not available, using simplified version")
+    import logging
+    logging.warning("[VideoClassifier] Full video dependencies not available, using simplified version")
 
 from collections import Counter
 import os
@@ -35,7 +36,8 @@ class VideoClassifier:
                 min_tracking_confidence=0.5
             )
         else:
-            print("[VideoClassifier] Using simplified mode - install opencv-python and mediapipe for full functionality")
+            import logging
+            logging.info("[VideoClassifier] Using simplified mode - install opencv-python and mediapipe for full functionality")
 
     def extract_facial_features(self, landmarks):
         """
@@ -78,7 +80,8 @@ class VideoClassifier:
             }
 
         except Exception as e:
-            print(f"Error extracting facial features: {e}")
+            import logging
+            logging.error(f"Error extracting facial features: {e}")
             return None
 
     def _calculate_eye_aspect_ratio(self, eye_points):
@@ -179,16 +182,18 @@ class VideoClassifier:
         try:
             # Handle both file paths and bytes
             if isinstance(video_input, bytes):
-                print(f"[VideoClassifier] Processing video bytes (size: {len(video_input)})")
+                import logging
+                logging.debug(f"[VideoClassifier] Processing video bytes (size: {len(video_input)})")
                 # For bytes input, use simplified prediction
                 import random
                 sentiments = ["positive", "negative", "neutral"]
                 sentiment = random.choice(sentiments)
                 confidence = 0.5 + random.random() * 0.3  # 0.5 to 0.8
-                print(f"[VideoClassifier] Simplified result: {sentiment} (confidence: {confidence:.2f})")
+                logging.debug(f"[VideoClassifier] Simplified result: {sentiment} (confidence: {confidence:.2f})")
                 return sentiment, confidence
             else:
-                print(f"[VideoClassifier] Processing file: {video_input}")
+                import logging
+                logging.debug(f"[VideoClassifier] Processing file: {video_input}")
 
             if not FULL_VIDEO_AVAILABLE:
                 # Simplified prediction based on filename or random for demo
@@ -196,13 +201,15 @@ class VideoClassifier:
                 sentiments = ["positive", "negative", "neutral"]
                 sentiment = random.choice(sentiments)
                 confidence = 0.5 + random.random() * 0.3  # 0.5 to 0.8
-                print(f"[VideoClassifier] Simplified result: {sentiment} (confidence: {confidence:.2f})")
+                import logging
+                logging.debug(f"[VideoClassifier] Simplified result: {sentiment} (confidence: {confidence:.2f})")
                 return sentiment, confidence
 
             # Open video file
             cap = cv2.VideoCapture(video_input)
             if not cap.isOpened():
-                print(f"Error: Could not open video {video_input}")
+                import logging
+                logging.error(f"Error: Could not open video {video_input}")
                 return "neutral", 0.3
 
             emotions = []
@@ -224,7 +231,8 @@ class VideoClassifier:
             cap.release()
 
             if not emotions:
-                print("[VideoClassifier] No faces detected in video")
+                import logging
+                logging.warning("[VideoClassifier] No faces detected in video")
                 return "neutral", 0.3
 
             # Aggregate emotions across frames
@@ -235,11 +243,13 @@ class VideoClassifier:
             most_common_emotion = emotion_counts.most_common(1)[0][0]
             avg_confidence = np.mean(confidences)
 
-            print(f"[VideoClassifier] Result: {most_common_emotion} (confidence: {avg_confidence:.2f})")
-            print(f"[VideoClassifier] Emotion distribution: {dict(emotion_counts)}")
+            import logging
+            logging.debug(f"[VideoClassifier] Result: {most_common_emotion} (confidence: {avg_confidence:.2f})")
+            logging.debug(f"[VideoClassifier] Emotion distribution: {dict(emotion_counts)}")
 
             return most_common_emotion, avg_confidence
 
         except Exception as e:
-            print(f"[VideoClassifier] Error processing video input: {e}")
+            import logging
+            logging.error(f"[VideoClassifier] Error processing video input: {e}")
             return "neutral", 0.3

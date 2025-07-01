@@ -33,16 +33,16 @@
 - **GPU Acceleration**: CUDA-optimized inference
 
 ### 🛡️ **Enterprise Security**
-- **Input Validation**: 50MB file limits, type checking
-- **XSS Protection**: Content sanitization
-- **Rate Limiting**: DDoS protection
-- **Security Headers**: OWASP compliance
+- **Input Validation**: 50MB file limits, magic number validation
+- **XSS Protection**: Content sanitization with bleach
+- **Rate Limiting**: API endpoint protection (10 req/s)
+- **Security Headers**: OWASP compliance with nginx
 
 ### 🎯 **Production Ready**
-- **Docker Deployment**: Multi-stage builds with GPU/CPU support
-- **Load Balancing**: Nginx configuration included
-- **Monitoring**: Health checks, metrics, logging
-- **Auto-scaling**: Kubernetes HPA/VPA ready
+- **Docker Deployment**: Multi-stage builds with CPU/GPU/dev profiles
+- **Load Balancing**: Nginx reverse proxy with SSL termination
+- **Monitoring**: Health checks, enhanced logging, SQLite analytics
+- **Runtime Configuration**: Hot-reload fusion settings without restart
 
 ## 🏁 **Quick Start**
 
@@ -83,11 +83,17 @@ python start_server.py
 ### 3️⃣ **Docker Deployment**
 
 ```bash
-# CPU deployment
-docker-compose up --build
+# CPU deployment (recommended)
+docker-compose --profile cpu up -d
 
 # GPU deployment (NVIDIA Docker required)
-docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
+docker-compose --profile gpu up -d
+
+# Development with hot reload
+docker-compose --profile dev up -d
+
+# Production with nginx SSL
+docker-compose --profile production --profile cpu up -d
 ```
 
 ## 🔧 **API Reference**
@@ -104,7 +110,12 @@ curl -X POST "http://localhost:8000/predict/text" \
 {
   "sentiment": "positive",
   "confidence": 0.987,
-  "model_version": {"text": "v2.0"},
+  "model_versions": {
+    "text": "v2.0",
+    "audio": "v1.0",
+    "video": "v1.0",
+    "fusion": "v1.0"
+  },
   "emotions": {
     "joy": 0.85,
     "excitement": 0.72,
@@ -143,6 +154,42 @@ curl -X POST "http://localhost:8000/predict/batch" \
      -F "files=@video1.mp4"
 ```
 
+### **Runtime Configuration Management** *(Day 3 Feature)*
+
+#### **Get Current Configuration**
+```bash
+curl -X GET "http://localhost:8000/config/fusion"
+```
+
+#### **Update Fusion Weights**
+```bash
+curl -X POST "http://localhost:8000/config/fusion/weights" \
+     -H "Content-Type: application/json" \
+     -d '{"text": 0.6, "audio": 0.3, "video": 0.1}'
+```
+
+#### **Change Fusion Method**
+```bash
+curl -X POST "http://localhost:8000/config/fusion/method" \
+     -H "Content-Type: application/json" \
+     -d '{"method": "confidence_weighted"}'
+```
+
+#### **Apply Team Preset**
+```bash
+curl -X POST "http://localhost:8000/config/fusion/preset/gandhar_avatar_emotions"
+```
+
+#### **List Available Presets**
+```bash
+curl -X GET "http://localhost:8000/config/fusion/presets"
+```
+
+#### **Reload Configuration**
+```bash
+curl -X POST "http://localhost:8000/config/fusion/reload"
+```
+
 ## 🌐 **Web Dashboard**
 
 Access the interactive dashboard at `http://localhost:8000/dashboard`
@@ -154,85 +201,185 @@ Access the interactive dashboard at `http://localhost:8000/dashboard`
 - **🎛️ Controls**: Adjust fusion weights in real-time
 - **📈 Analytics**: Performance metrics and history
 
-## 👥 **Team Integration**
+## 👥 **Team Integration** *(Day 3 Feature)*
 
-### **Avatar Emotions (Gandhar)**
-```yaml
-# config/fusion_config.yaml
-team_presets:
-  gandhar_avatar_emotions:
-    video_weight: 0.6
-    audio_weight: 0.3
-    text_weight: 0.1
+### **Avatar Emotions (Gandhar/Karthikeya)**
+```bash
+# Apply preset via API
+curl -X POST "http://localhost:8000/config/fusion/preset/gandhar_avatar_emotions"
+
+# Or configure manually
+curl -X POST "http://localhost:8000/config/fusion/weights" \
+     -d '{"text": 0.3, "audio": 0.4, "video": 0.3}'
 ```
+
+**Configuration Focus:**
+- High video weight for facial expression detection
+- Balanced audio weight for tone analysis
+- Confidence-weighted method for emotional nuance
 
 ### **AI Teacher Scoring (Vedant/Rishabh)**
-```yaml
-team_presets:
-  vedant_ai_teacher:
-    text_weight: 0.7
-    audio_weight: 0.2
-    video_weight: 0.1
+```bash
+# Apply preset via API
+curl -X POST "http://localhost:8000/config/fusion/preset/vedant_teacher_scoring"
+
+# Or configure manually
+curl -X POST "http://localhost:8000/config/fusion/weights" \
+     -d '{"text": 0.6, "audio": 0.3, "video": 0.1}'
 ```
+
+**Configuration Focus:**
+- High text weight for content analysis
+- Moderate audio weight for engagement detection
+- Adaptive method for learning improvement
 
 ### **Content Moderation (Shashank)**
+```bash
+# Apply preset via API
+curl -X POST "http://localhost:8000/config/fusion/preset/shashank_content_moderation"
+
+# Or configure manually
+curl -X POST "http://localhost:8000/config/fusion/weights" \
+     -d '{"text": 0.7, "audio": 0.2, "video": 0.1}'
+```
+
+**Configuration Focus:**
+- Maximum text weight for content analysis
+- High confidence threshold (0.9) for safety
+- Simple method for consistent results
+
+## ⚙️ **Configuration** *(Day 3 Enhanced)*
+
+### **Runtime Fusion Configuration** (`config/fusion_config.yaml`)
 ```yaml
+# Fusion Method Configuration
+fusion:
+  method: "confidence_weighted"  # simple, confidence_weighted, adaptive
+  enable_dynamic_weights: true
+  confidence_threshold: 0.7
+  hot_reload: true              # Runtime config changes
+  reload_interval: 30
+
+# Static Weights (when dynamic weights disabled)
+weights:
+  text: 0.5
+  audio: 0.25
+  video: 0.25
+
+# Team-specific presets (Day 3)
 team_presets:
-  shashank_content_mod:
-    text_weight: 0.5
-    audio_weight: 0.3
-    video_weight: 0.2
+  gandhar_avatar_emotions:
+    method: "confidence_weighted"
+    weights: {text: 0.3, audio: 0.4, video: 0.3}
     confidence_threshold: 0.8
+    focus: "emotional_nuance"
+
+  vedant_teacher_scoring:
+    method: "adaptive"
+    weights: {text: 0.6, audio: 0.3, video: 0.1}
+    confidence_threshold: 0.75
+    focus: "content_accuracy"
+
+  shashank_content_moderation:
+    method: "simple"
+    weights: {text: 0.7, audio: 0.2, video: 0.1}
+    confidence_threshold: 0.9
+    focus: "safety_detection"
+
+# Runtime control features
+runtime_control:
+  enable_config_api: true       # API endpoints for config changes
+  config_api_auth: true         # Require authentication
+
+  # A/B testing support
+  ab_testing:
+    enabled: false
+    test_groups: ["control", "experimental"]
+    traffic_split: [0.5, 0.5]
 ```
 
-## ⚙️ **Configuration**
-
-### **Fusion Weights** (`config/fusion_config.yaml`)
-```yaml
-fusion_algorithms:
-  confidence_weighted:
-    text_weight: 0.5
-    audio_weight: 0.3
-    video_weight: 0.2
-    
-hot_reload:
-  enabled: true
-  check_interval: 30
-```
-
-### **Model Configuration** (`config/model_config.yaml`)
-```yaml
-models:
-  text:
-    model_name: "cardiffnlp/twitter-roberta-base-sentiment-latest"
-    device: "auto"
-    batch_size: 32
-```
-
-## 🐳 **Deployment**
-
-### **Development**
+### **Environment Configuration** (`.env`)
 ```bash
-docker-compose up --build
+# Device Configuration
+DEVICE=cpu                    # cpu or cuda
+ENABLE_GPU=false             # true for GPU acceleration
+
+# API Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
+API_WORKERS=4
+
+# File Size Limits (50MB as per requirements)
+MAX_FILE_SIZE_AUDIO=52428800
+MAX_FILE_SIZE_VIDEO=52428800
+
+# Model Versions
+TEXT_MODEL_VERSION=v2.0
+AUDIO_MODEL_VERSION=v1.0
+VIDEO_MODEL_VERSION=v1.0
+FUSION_MODEL_VERSION=v1.0
 ```
 
-### **Production with GPU**
+## 🐳 **Deployment** *(Enhanced Docker Configuration)*
+
+### **Quick Deployment Options**
+
+#### **CPU-Only (Recommended for most users)**
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+docker-compose --profile cpu up -d
+# API available at http://localhost:8000
 ```
 
-### **Kubernetes**
+#### **GPU-Accelerated (CUDA required)**
 ```bash
-kubectl apply -f k8s/
+docker-compose --profile gpu up -d
+# Requires nvidia-docker2 package
 ```
 
-### **Environment Variables**
+#### **Development Environment**
 ```bash
-# .env file
-MODEL_CACHE_DIR=/app/models
-LOG_LEVEL=INFO
-ENABLE_GPU=true
-MAX_WORKERS=4
+docker-compose --profile dev up -d
+# Hot reload enabled, debug mode, port 8001
+```
+
+#### **Production with SSL**
+```bash
+# Generate SSL certificates first
+mkdir -p ssl
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout ssl/key.pem -out ssl/cert.pem
+
+# Start production stack
+docker-compose --profile production --profile cpu up -d
+# HTTPS available at https://localhost
+```
+
+### **Docker Profiles Explained**
+- **`cpu`**: 4 workers, 2 CPU cores, 4GB RAM limit
+- **`gpu`**: 2 workers, CUDA support, 4 CPU cores, 8GB RAM
+- **`dev`**: Hot reload, debug mode, development tools
+- **`production`**: Nginx reverse proxy, SSL termination, rate limiting
+
+### **Health Monitoring**
+```bash
+# Check service health
+curl http://localhost:8000/health
+
+# Monitor containers
+docker-compose ps
+docker stats
+
+# View logs
+docker-compose logs -f multimodal-sentiment-api
+```
+
+### **Scaling**
+```bash
+# Scale API service
+docker-compose --profile cpu up -d --scale multimodal-sentiment-api=3
+
+# Use nginx load balancer
+docker-compose --profile production up -d
 ```
 
 ## 🧪 **Testing**
@@ -260,19 +407,35 @@ The repository includes comprehensive test files:
 
 ## 📈 **Performance Benchmarks**
 
-| Model Type | Avg Latency | Throughput | Memory Usage |
-|------------|-------------|------------|--------------|
-| Text       | 45ms        | 2000 req/s | 1.2GB        |
-| Audio      | 120ms       | 800 req/s  | 800MB        |
-| Video      | 250ms       | 400 req/s  | 2.1GB        |
-| Multimodal | 180ms       | 500 req/s  | 2.8GB        |
+### **Latency & Throughput**
+| Model Type | Avg Latency | Throughput | Memory Usage | File Size Limit |
+|------------|-------------|------------|--------------|------------------|
+| Text       | 45ms        | 2000 req/s | 1.2GB        | 10,000 chars     |
+| Audio      | 120ms       | 800 req/s  | 800MB        | 50MB             |
+| Video      | 250ms       | 400 req/s  | 2.1GB        | 50MB             |
+| Multimodal | 180ms       | 500 req/s  | 2.8GB        | Combined         |
+
+### **Security & Validation**
+- **File Type Validation**: Magic number verification
+- **Content Sanitization**: XSS protection with bleach
+- **Rate Limiting**: 10 req/s API, 2 req/s uploads
+- **Input Validation**: Comprehensive file and text validation
+
+### **New Features (Day 3)**
+- ✅ **Runtime Configuration**: Change fusion settings without restart
+- ✅ **Team Presets**: Pre-configured settings for different use cases
+- ✅ **Hot Reload**: Automatic configuration file monitoring
+- ✅ **Enhanced Logging**: SQLite-based analytics and monitoring
+- ✅ **Docker Profiles**: CPU/GPU/dev/production deployment options
+- ✅ **API Management**: RESTful configuration endpoints
 
 ## 📚 **Documentation**
 
 - **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation
-- **[Fusion Guide](docs/FUSION_CONFIGURATION_GUIDE.md)** - Advanced fusion configuration
-- **[SDK Documentation](docs/SDK_DOCUMENTATION.md)** - Python SDK usage
-- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment
+- **[Fusion Configuration Guide](FUSION_CONFIGURATION_GUIDE.md)** - Advanced fusion configuration
+- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment guide
+- **[Interactive API Docs](http://localhost:8000/docs)** - Swagger UI (when server running)
+- **[ReDoc API Docs](http://localhost:8000/redoc)** - Alternative API documentation
 
 ## 🛠️ **Development**
 

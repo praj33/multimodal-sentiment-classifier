@@ -26,9 +26,9 @@ class FusionConfigManager:
         # Load initial configuration
         self.load_config()
         
-        # Start hot reload if enabled (temporarily disabled for debugging)
-        # if self.config.get('fusion', {}).get('hot_reload', False):
-        #     self.start_hot_reload()
+        # Start hot reload if enabled
+        if self.config.get('fusion', {}).get('hot_reload', False):
+            self.start_hot_reload()
     
     def load_config(self) -> Dict[str, Any]:
         """Load fusion configuration from YAML file"""
@@ -124,9 +124,11 @@ class FusionConfigManager:
                 self.logger.error(f"Error in hot reload worker: {e}")
                 time.sleep(reload_interval)
     
-    def get_team_preset(self, team_name: str) -> Optional[Dict[str, Any]]:
+    def get_team_preset(self, team_name: str = None) -> Optional[Dict[str, Any]]:
         """Get configuration preset for specific team (Day 3 feature)"""
         presets = self.config.get('fusion', {}).get('team_presets', {})
+        if team_name is None:
+            return presets  # Return all presets
         return presets.get(team_name)
     
     def apply_team_preset(self, team_name: str) -> bool:

@@ -72,9 +72,10 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p logs models config dev
 
-# Copy .env file and ensure it exists
-COPY .env .env.example* ./
-RUN if [ ! -f .env ]; then cp .env.example .env 2>/dev/null || echo "# Default environment file\nDEVICE=cpu\nENABLE_GPU=false" > .env; fi
+# Copy configuration files
+COPY config/ ./config/
+COPY .env* ./
+RUN if [ ! -f .env ]; then echo "# Default environment file\nDEVICE=cpu\nENABLE_GPU=false\nAPI_HOST=0.0.0.0\nAPI_PORT=8000\nMAX_FILE_SIZE_AUDIO=52428800\nMAX_FILE_SIZE_VIDEO=52428800" > .env; fi
 
 # Set proper permissions
 RUN chmod +x *.py

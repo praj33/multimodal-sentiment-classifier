@@ -10,7 +10,8 @@ try:
     FULL_AUDIO_AVAILABLE = True
 except ImportError:
     FULL_AUDIO_AVAILABLE = False
-    print("[AudioClassifier] Full audio dependencies not available, using simplified version")
+    import logging
+    logging.warning("[AudioClassifier] Full audio dependencies not available, using simplified version")
 
 import os
 import warnings
@@ -27,7 +28,8 @@ class AudioClassifier:
             self.model = None
             self._initialize_model()
         else:
-            print("[AudioClassifier] Using simplified mode - install librosa for full functionality")
+            import logging
+            logging.info("[AudioClassifier] Using simplified mode - install librosa for full functionality")
 
     def _initialize_model(self):
         """Initialize a simple rule-based model for audio sentiment"""
@@ -65,7 +67,8 @@ class AudioClassifier:
             return features
 
         except Exception as e:
-            print(f"Error extracting features from {audio_path}: {e}")
+            import logging
+            logging.error(f"Error extracting features from {audio_path}: {e}")
             # Return default features if extraction fails
             return np.zeros(28)  # 13*2 + 3 additional features
 
@@ -76,16 +79,18 @@ class AudioClassifier:
         try:
             # Handle both file paths and bytes
             if isinstance(audio_input, bytes):
-                print(f"[AudioClassifier] Processing audio bytes (size: {len(audio_input)})")
+                import logging
+                logging.debug(f"[AudioClassifier] Processing audio bytes (size: {len(audio_input)})")
                 # For bytes input, use simplified prediction
                 import random
                 sentiments = ["positive", "negative", "neutral"]
                 sentiment = random.choice(sentiments)
                 confidence = 0.5 + random.random() * 0.3  # 0.5 to 0.8
-                print(f"[AudioClassifier] Simplified result: {sentiment} (confidence: {confidence:.2f})")
+                logging.debug(f"[AudioClassifier] Simplified result: {sentiment} (confidence: {confidence:.2f})")
                 return sentiment, confidence
             else:
-                print(f"[AudioClassifier] Processing file: {audio_input}")
+                import logging
+                logging.debug(f"[AudioClassifier] Processing file: {audio_input}")
 
             if not FULL_AUDIO_AVAILABLE:
                 # Simplified prediction based on filename or random for demo
@@ -93,7 +98,8 @@ class AudioClassifier:
                 sentiments = ["positive", "negative", "neutral"]
                 sentiment = random.choice(sentiments)
                 confidence = 0.5 + random.random() * 0.3  # 0.5 to 0.8
-                print(f"[AudioClassifier] Simplified result: {sentiment} (confidence: {confidence:.2f})")
+                import logging
+                logging.debug(f"[AudioClassifier] Simplified result: {sentiment} (confidence: {confidence:.2f})")
                 return sentiment, confidence
 
             # Extract features
@@ -147,10 +153,12 @@ class AudioClassifier:
                 sentiment = "neutral"
                 confidence = 0.5
 
-            print(f"[AudioClassifier] Result: {sentiment} (confidence: {confidence:.2f})")
+            import logging
+            logging.debug(f"[AudioClassifier] Result: {sentiment} (confidence: {confidence:.2f})")
             return sentiment, confidence
 
         except Exception as e:
-            print(f"[AudioClassifier] Error processing audio input: {e}")
+            import logging
+            logging.error(f"[AudioClassifier] Error processing audio input: {e}")
             # Return neutral with low confidence on error
             return "neutral", 0.3

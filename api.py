@@ -38,6 +38,7 @@ from streaming_api import add_streaming_routes, STREAMING_TEST_HTML
 # Classifier imports moved to lazy loading functions to prevent startup hanging
 from fusion.fusion_engine import FusionEngine
 from enhanced_logging import EnhancedSentimentLogger
+from fusion_config_manager import get_fusion_config_manager
 
 # Day 2-3: Import configuration and validation modules
 from config_loader import get_config_loader
@@ -1073,7 +1074,7 @@ async def predict_batch(
     if texts:
         for i, text in enumerate(texts):
             try:
-                sanitized_text = input_validator.validate_and_sanitize_text(text)
+                sanitized_text = input_validator.validate_text_input(text)
                 analysis_result = get_text_model().predict(sanitized_text)
 
                 if isinstance(analysis_result, dict):
@@ -1128,6 +1129,259 @@ def get_streaming_test():
 
 # Add streaming routes
 add_streaming_routes(app)
+
+# ============================================================================
+# FUSION CONFIGURATION MANAGEMENT API ENDPOINTS (Day 3 Requirement)
+# ============================================================================
+
+@app.get("/config/fusion",
+    summary="Get Current Fusion Configuration",
+    description="""
+    Get the current fusion configuration settings.
+
+    **Day 3 Feature:** Runtime configuration access for teams to view current settings.
+
+    **Returns:**
+    - Complete fusion configuration
+    - Current weights and method
+    - Team presets available
+    """,
+    response_description="Current fusion configuration")
+async def get_fusion_config():
+    """Get current fusion configuration"""
+    try:
+        config_manager = get_fusion_config_manager()
+        config = config_manager.load_config()
+
+        return {
+            "status": "success",
+            "config": config,
+            "current_method": config_manager.get_fusion_method(),
+            "current_weights": config_manager.get_weights(),
+            "available_presets": list(config.get('fusion', {}).get('team_presets', {}).keys()),
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving fusion config: {str(e)}")
+
+@app.post("/config/fusion/weights",
+    summary="Update Fusion Weights",
+    description="""
+    Update the fusion weights for different modalities at runtime.
+
+    **Day 3 Feature:** Dynamic weight adjustment without restart.
+
+    **Request Body:**
+    ```json
+    {
+        "text": 0.5,
+        "audio": 0.3,
+        "video": 0.2
+    }
+    ```
+
+    **Validation:**
+    - Weights must sum to 1.0
+    - Each weight must be between 0.0 and 1.0
+    """,
+    response_description="Updated fusion configuration")
+async def update_fusion_weights(weights: dict):
+    """Update fusion weights at runtime"""
+    try:
+        config_manager = get_fusion_config_manager()
+
+        # Validate weights
+        if not isinstance(weights, dict):
+            raise HTTPException(status_code=400, detail="Weights must be a dictionary")
+
+        required_keys = {'text', 'audio', 'video'}
+        if not required_keys.issubset(weights.keys()):
+            raise HTTPException(status_code=400, detail=f"Missing required weight keys: {required_keys - weights.keys()}")
+
+        # Check weight values
+        for key, value in weights.items():
+            if not isinstance(value, (int, float)) or value < 0 or value > 1:
+                raise HTTPException(status_code=400, detail=f"Weight '{key}' must be between 0.0 and 1.0")
+
+        # Check sum equals 1.0 (with tolerance)
+        weight_sum = sum(weights.values())
+        if abs(weight_sum - 1.0) > 0.001:
+            raise HTTPException(status_code=400, detail=f"Weights must sum to 1.0, got {weight_sum}")
+
+        # Update weights
+        success = config_manager.update_weights(weights)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update weights")
+
+        return {
+            "status": "success",
+            "message": "Fusion weights updated successfully",
+            "new_weights": weights,
+            "timestamp": time.time()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating fusion weights: {str(e)}")
+
+@app.post("/config/fusion/method",
+    summary="Update Fusion Method",
+    description="""
+    Update the fusion method at runtime.
+
+    **Day 3 Feature:** Switch fusion algorithms without restart.
+
+    **Available Methods:**
+    - `simple`: Basic weighted average
+    - `confidence_weighted`: Dynamic confidence-based weighting
+    - `adaptive`: Adaptive learning-based fusion
+
+    **Request Body:**
+    ```json
+    {
+        "method": "confidence_weighted"
+    }
+    ```
+    """,
+    response_description="Updated fusion method")
+async def update_fusion_method(method_data: dict):
+    """Update fusion method at runtime"""
+    try:
+        config_manager = get_fusion_config_manager()
+
+        if not isinstance(method_data, dict) or 'method' not in method_data:
+            raise HTTPException(status_code=400, detail="Request must contain 'method' field")
+
+        method = method_data['method']
+        valid_methods = ['simple', 'confidence_weighted', 'adaptive', 'custom']
+
+        if method not in valid_methods:
+            raise HTTPException(status_code=400, detail=f"Invalid method. Must be one of: {valid_methods}")
+
+        success = config_manager.update_method(method)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to update fusion method")
+
+        return {
+            "status": "success",
+            "message": f"Fusion method updated to '{method}'",
+            "new_method": method,
+            "timestamp": time.time()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating fusion method: {str(e)}")
+
+@app.post("/config/fusion/preset/{team_name}",
+    summary="Apply Team Preset Configuration",
+    description="""
+    Apply a team-specific fusion configuration preset.
+
+    **Day 3 Feature:** Quick configuration switching for different teams.
+
+    **Available Teams:**
+    - `gandhar_avatar_emotions`: Optimized for avatar emotion detection
+    - `vedant_teacher_scoring`: Optimized for AI teacher scoring
+    - `shashank_content_moderation`: Optimized for content moderation
+
+    **Path Parameters:**
+    - `team_name`: Name of the team preset to apply
+    """,
+    response_description="Applied team preset configuration")
+async def apply_team_preset(team_name: str):
+    """Apply team-specific configuration preset"""
+    try:
+        config_manager = get_fusion_config_manager()
+
+        # Get available presets
+        available_presets = config_manager.get_team_preset(None)  # Get all presets
+        if not available_presets or team_name not in available_presets:
+            available = list(available_presets.keys()) if available_presets else []
+            raise HTTPException(
+                status_code=404,
+                detail=f"Team preset '{team_name}' not found. Available presets: {available}"
+            )
+
+        success = config_manager.apply_team_preset(team_name)
+        if not success:
+            raise HTTPException(status_code=500, detail=f"Failed to apply preset for team '{team_name}'")
+
+        # Get the applied configuration
+        preset_config = config_manager.get_team_preset(team_name)
+
+        return {
+            "status": "success",
+            "message": f"Applied configuration preset for team '{team_name}'",
+            "team": team_name,
+            "applied_config": preset_config,
+            "timestamp": time.time()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error applying team preset: {str(e)}")
+
+@app.get("/config/fusion/presets",
+    summary="List Available Team Presets",
+    description="""
+    Get all available team configuration presets.
+
+    **Day 3 Feature:** Discovery of available team configurations.
+
+    **Returns:**
+    - List of available team presets
+    - Configuration details for each preset
+    - Integration notes for teams
+    """,
+    response_description="Available team presets")
+async def list_team_presets():
+    """List all available team configuration presets"""
+    try:
+        config_manager = get_fusion_config_manager()
+        config = config_manager.load_config()
+
+        presets = config.get('fusion', {}).get('team_presets', {})
+        integration_notes = config.get('integration_notes', {})
+
+        return {
+            "status": "success",
+            "presets": presets,
+            "integration_notes": integration_notes,
+            "count": len(presets),
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving team presets: {str(e)}")
+
+@app.post("/config/fusion/reload",
+    summary="Reload Fusion Configuration",
+    description="""
+    Reload fusion configuration from the YAML file.
+
+    **Day 3 Feature:** Manual configuration reload without restart.
+
+    **Use Cases:**
+    - After manual YAML file edits
+    - To refresh configuration from external updates
+    - Troubleshooting configuration issues
+    """,
+    response_description="Configuration reload status")
+async def reload_fusion_config():
+    """Reload fusion configuration from file"""
+    try:
+        config_manager = get_fusion_config_manager()
+        config = config_manager.load_config()
+
+        return {
+            "status": "success",
+            "message": "Fusion configuration reloaded successfully",
+            "config_timestamp": time.time(),
+            "current_method": config_manager.get_fusion_method(),
+            "current_weights": config_manager.get_weights()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error reloading fusion config: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
