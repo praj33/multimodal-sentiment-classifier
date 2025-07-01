@@ -17,7 +17,7 @@
 
 **🚀 Production-ready multimodal sentiment analysis platform with advanced AI fusion, real-time processing, enterprise security, and comprehensive deployment orchestration.**
 
-[🏁 **Quick Start**](#-quick-start) • [🏗️ **Architecture**](#-architecture) • [📚 **API Docs**](#-api-reference) • [🌐 **Dashboard**](#-web-dashboard) • [👥 **Team Integration**](#-team-integration) • [🐳 **Deploy**](#-deployment) • [📊 **Monitoring**](#-monitoring--observability) • [🔧 **Advanced Config**](#-advanced-configuration)
+[🏁 **Quick Start**](#-quick-start) • [🏗️ **Architecture**](#️-architecture) • [📚 **API Docs**](#-complete-api-reference) • [🌐 **Dashboard**](#-web-dashboard) • [👥 **Team Integration**](#-advanced-team-integration-guide) • [🐳 **Deploy**](#-complete-deployment-guide) • [📊 **Monitoring**](#-monitoring--observability) • [🔧 **Advanced Config**](#-advanced-configuration)
 
 ---
 
