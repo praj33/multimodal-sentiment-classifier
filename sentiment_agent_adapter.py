@@ -325,12 +325,44 @@ class UniguruSentimentAgent:
             if persona not in self.persona_configs:
                 persona = "youth"  # Default fallback
             
-            # Validate input
+            # Validate input - handle empty text gracefully
             if not any([text, image_url, audio_url]):
+                # Return neutral response for empty input
                 return {
-                    "error": "No input provided",
-                    "details": "At least one of 'text', 'image_url', or 'audio_url' must be provided",
-                    "timestamp": datetime.now().isoformat()
+                    "sentiment": "neutral",
+                    "tone": "neutral",
+                    "confidence": 0.5,
+                    "tts_emotion": "calm",
+                    "processing_time_ms": 0.0,
+                    "persona": persona,
+                    "timestamp": datetime.now().isoformat(),
+                    "analysis_details": {
+                        "text": {
+                            "sentiment": "neutral",
+                            "confidence": 0.5,
+                            "basic_analysis": True,
+                            "emotions": {"neutral": 0.5},
+                            "intensity": "low",
+                            "emotional_context": {
+                                "dominant_emotion": "neutral",
+                                "secondary_emotion": None,
+                                "emotional_stability": 1.0
+                            },
+                            "advanced_metrics": {
+                                "emotional_complexity": 0.0,
+                                "sentiment_strength": 0.5,
+                                "emotional_consistency": 1.0
+                            },
+                            "advanced_analysis": True
+                        }
+                    },
+                    "language": "Unknown",
+                    "input_summary": {
+                        "has_text": False,
+                        "has_image": False,
+                        "has_audio": False,
+                        "modalities_analyzed": 0
+                    }
                 }
             
             # Initialize results

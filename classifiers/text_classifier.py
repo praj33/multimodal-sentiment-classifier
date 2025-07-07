@@ -111,8 +111,26 @@ class TextClassifier:
     def _process_emotion_results(self, emotion_results, base_confidence):
         """Process emotion classification results into advanced metrics"""
         emotions = {}
-        for result in emotion_results:
-            emotions[result['label']] = result['score']
+
+        # Handle different emotion result formats
+        try:
+            if isinstance(emotion_results, list) and len(emotion_results) > 0:
+                if isinstance(emotion_results[0], dict):
+                    # Format: [{'label': 'joy', 'score': 0.8}, ...]
+                    for result in emotion_results:
+                        emotions[result['label']] = result['score']
+                elif isinstance(emotion_results[0], list) and len(emotion_results[0]) >= 2:
+                    # Format: [['joy', 0.8], ['sadness', 0.2], ...]
+                    for result in emotion_results:
+                        emotions[result[0]] = result[1]
+                else:
+                    # Fallback: create neutral emotion
+                    emotions = {'neutral': base_confidence}
+            else:
+                emotions = {'neutral': base_confidence}
+        except (KeyError, IndexError, TypeError) as e:
+            logger.warning(f"Error processing emotion results: {e}, using neutral")
+            emotions = {'neutral': base_confidence}
 
         # Find dominant emotions
         sorted_emotions = sorted(emotions.items(), key=lambda x: x[1], reverse=True)

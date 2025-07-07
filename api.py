@@ -45,9 +45,13 @@ from config_loader import get_config_loader
 from model_versioning import format_api_response, format_multimodal_response, get_version_manager
 from validation_middleware import configure_validation_middleware, RequestValidationHelper
 
+# Import analytics dashboard
+from advanced_analytics_dashboard import analytics_engine, AnalyticsMetric
+
 import os
 import yaml
 import time
+from datetime import datetime
 
 app = FastAPI(
     title="Multimodal Sentiment Analysis API",
@@ -131,6 +135,26 @@ def get_fusion_engine():
 
 # Initialize enhanced logger
 sentiment_logger = EnhancedSentimentLogger()
+
+# Analytics helper function
+async def log_analytics_metric(sentiment: str, confidence: float, modality: str,
+                              processing_time: float, user_id: str = None,
+                              location: str = None, session_id: str = None):
+    """Log analytics metric for dashboard tracking"""
+    try:
+        metric = AnalyticsMetric(
+            timestamp=datetime.now(),
+            sentiment=sentiment,
+            confidence=confidence,
+            modality=modality,
+            processing_time=processing_time,
+            user_id=user_id,
+            location=location,
+            session_id=session_id
+        )
+        await analytics_engine.add_metric(metric)
+    except Exception as e:
+        print(f"Failed to log analytics metric: {e}")
 
 # Request model for text
 class TextInput(BaseModel):
@@ -229,6 +253,18 @@ def predict_text(data: TextInput):
         input_content=sanitized_text,
         processing_time=processing_time * 1000
     )
+
+    # Log analytics metric for dashboard
+    import asyncio
+    try:
+        asyncio.create_task(log_analytics_metric(
+            sentiment=sentiment,
+            confidence=confidence,
+            modality="text",
+            processing_time=processing_time * 1000
+        ))
+    except Exception as e:
+        print(f"Analytics logging failed: {e}")
 
     # Create advanced response with model versioning
     response = format_api_response(
@@ -1382,6 +1418,26 @@ async def reload_fusion_config():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reloading fusion config: {str(e)}")
+
+# Mount analytics dashboard as sub-application
+from advanced_analytics_dashboard import analytics_app
+app.mount("/analytics", analytics_app)
+
+# Add analytics dashboard route
+@app.get("/analytics-dashboard", response_class=HTMLResponse)
+async def analytics_dashboard_redirect():
+    """Redirect to analytics dashboard"""
+    return """
+    <html>
+        <head>
+            <meta http-equiv="refresh" content="0; url=/analytics/">
+            <title>Redirecting to Analytics Dashboard</title>
+        </head>
+        <body>
+            <p>Redirecting to <a href="/analytics/">Analytics Dashboard</a>...</p>
+        </body>
+    </html>
+    """
 
 if __name__ == "__main__":
     import uvicorn
