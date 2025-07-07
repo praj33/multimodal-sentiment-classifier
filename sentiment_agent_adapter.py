@@ -269,10 +269,10 @@ class UniguruSentimentAgent:
         adjusted = confidence * boost
         return min(1.0, adjusted)  # Cap at 1.0
     
-    async def predict(self, json_input: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
+    async def predict(self, json_input: Union[str, Dict[str, Any]], simple_format: bool = True) -> Dict[str, Any]:
         """
         🎯 Main prediction function for Uniguru Sentiment Agent
-        
+
         Args:
             json_input: JSON string or dict with keys:
                 - text (optional): Text to analyze
@@ -280,9 +280,19 @@ class UniguruSentimentAgent:
                 - audio_url (optional): URL of audio to analyze
                 - persona (optional): "youth", "kids", or "spiritual"
                 - language (optional): Force specific language
-        
+                - simple_format (optional): Return simple format (default: True)
+
         Returns:
-            Dict with sentiment analysis results:
+            Simple format (default):
+            {
+                "sentiment": "positive|negative|neutral",
+                "tone": "persona-specific tone",
+                "confidence": 0.89,
+                "tts_emotion": "emotion for TTS",
+                "language": "detected language" (if detected)
+            }
+
+            Advanced format (simple_format=False):
             {
                 "sentiment": "positive|negative|neutral",
                 "tone": "persona-specific tone",
@@ -320,50 +330,62 @@ class UniguruSentimentAgent:
             audio_url = input_data.get("audio_url", "").strip()
             persona = input_data.get("persona", "youth").lower()
             forced_language = input_data.get("language")
-            
+
+            # Check if simple format is requested in input
+            if "simple_format" in input_data:
+                simple_format = input_data.get("simple_format", True)
+
             # Validate persona
             if persona not in self.persona_configs:
                 persona = "youth"  # Default fallback
             
-            # Validate input - handle empty text gracefully
+            # Validate input - handle empty input gracefully
             if not any([text, image_url, audio_url]):
                 # Return neutral response for empty input
-                return {
-                    "sentiment": "neutral",
-                    "tone": "neutral",
-                    "confidence": 0.5,
-                    "tts_emotion": "calm",
-                    "processing_time_ms": 0.0,
-                    "persona": persona,
-                    "timestamp": datetime.now().isoformat(),
-                    "analysis_details": {
-                        "text": {
-                            "sentiment": "neutral",
-                            "confidence": 0.5,
-                            "basic_analysis": True,
-                            "emotions": {"neutral": 0.5},
-                            "intensity": "low",
-                            "emotional_context": {
-                                "dominant_emotion": "neutral",
-                                "secondary_emotion": None,
-                                "emotional_stability": 1.0
-                            },
-                            "advanced_metrics": {
-                                "emotional_complexity": 0.0,
-                                "sentiment_strength": 0.5,
-                                "emotional_consistency": 1.0
-                            },
-                            "advanced_analysis": True
-                        }
-                    },
-                    "language": "Unknown",
-                    "input_summary": {
-                        "has_text": False,
-                        "has_image": False,
-                        "has_audio": False,
-                        "modalities_analyzed": 0
+                if simple_format:
+                    return {
+                        "sentiment": "neutral",
+                        "tone": "neutral",
+                        "confidence": 0.5,
+                        "tts_emotion": "calm"
                     }
-                }
+                else:
+                    return {
+                        "sentiment": "neutral",
+                        "tone": "neutral",
+                        "confidence": 0.5,
+                        "tts_emotion": "calm",
+                        "processing_time_ms": 0.0,
+                        "persona": persona,
+                        "timestamp": datetime.now().isoformat(),
+                        "analysis_details": {
+                            "text": {
+                                "sentiment": "neutral",
+                                "confidence": 0.5,
+                                "basic_analysis": True,
+                                "emotions": {"neutral": 0.5},
+                                "intensity": "low",
+                                "emotional_context": {
+                                    "dominant_emotion": "neutral",
+                                    "secondary_emotion": None,
+                                    "emotional_stability": 1.0
+                                },
+                                "advanced_metrics": {
+                                    "emotional_complexity": 0.0,
+                                    "sentiment_strength": 0.5,
+                                    "emotional_consistency": 1.0
+                                },
+                                "advanced_analysis": True
+                            }
+                        },
+                        "language": "Unknown",
+                        "input_summary": {
+                            "has_text": False,
+                            "has_image": False,
+                            "has_audio": False,
+                            "modalities_analyzed": 0
+                        }
+                    }
             
             # Initialize results
             results = []
@@ -490,30 +512,45 @@ class UniguruSentimentAgent:
             except Exception as e:
                 logger.warning(f"Analytics logging failed: {e}")
             
-            # Build response
-            response = {
-                "sentiment": final_sentiment,
-                "tone": tone,
-                "confidence": round(final_confidence, 3),
-                "tts_emotion": tts_emotion,
-                "processing_time_ms": round(processing_time, 2),
-                "persona": persona,
-                "timestamp": datetime.now().isoformat(),
-                "analysis_details": analysis_details
-            }
-            
-            # Add language if detected
-            if detected_language:
-                response["language"] = detected_language
-            
-            # Add input summary
-            response["input_summary"] = {
-                "has_text": bool(text),
-                "has_image": bool(image_url),
-                "has_audio": bool(audio_url),
-                "modalities_analyzed": len(results)
-            }
-            
+            # Build response based on format preference
+            if simple_format:
+                # Simple format as requested
+                response = {
+                    "sentiment": final_sentiment,
+                    "tone": tone,
+                    "confidence": round(final_confidence, 2),
+                    "tts_emotion": tts_emotion
+                }
+
+                # Add language if detected (bonus feature)
+                if detected_language:
+                    response["language"] = detected_language
+
+            else:
+                # Advanced format with full details
+                response = {
+                    "sentiment": final_sentiment,
+                    "tone": tone,
+                    "confidence": round(final_confidence, 3),
+                    "tts_emotion": tts_emotion,
+                    "processing_time_ms": round(processing_time, 2),
+                    "persona": persona,
+                    "timestamp": datetime.now().isoformat(),
+                    "analysis_details": analysis_details
+                }
+
+                # Add language if detected
+                if detected_language:
+                    response["language"] = detected_language
+
+                # Add input summary
+                response["input_summary"] = {
+                    "has_text": bool(text),
+                    "has_image": bool(image_url),
+                    "has_audio": bool(audio_url),
+                    "modalities_analyzed": len(results)
+                }
+
             return response
             
         except Exception as e:
@@ -537,20 +574,46 @@ def get_agent() -> UniguruSentimentAgent:
         _agent_instance = UniguruSentimentAgent()
     return _agent_instance
 
-async def predict(json_input: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
+async def predict(json_input: Union[str, Dict[str, Any]], simple_format: bool = True) -> Dict[str, Any]:
     """
     🎯 Main prediction function for Uniguru Sentiment Agent
-    
+
     This is the primary entry point for the Uniguru Sentiment Agent.
-    
+
     Args:
-        json_input: JSON string or dict with analysis parameters
-    
+        json_input: JSON string or dict with analysis parameters:
+            {
+                "image_url": "...",
+                "text": "...",
+                "persona": "youth/kids/spiritual"
+            }
+        simple_format: Return simple format (default: True)
+
     Returns:
-        Comprehensive sentiment analysis results with persona-specific insights
+        Simple format (default):
+        {
+            "sentiment": "positive",
+            "tone": "joyful",
+            "confidence": 0.89,
+            "tts_emotion": "cheerful",
+            "language": "English" (bonus - if detected)
+        }
     """
     agent = get_agent()
-    return await agent.predict(json_input)
+    return await agent.predict(json_input, simple_format)
+
+def predict_sync(json_input: Union[str, Dict[str, Any]], simple_format: bool = True) -> Dict[str, Any]:
+    """
+    🎯 Synchronous wrapper for predict function
+
+    Args:
+        json_input: JSON string or dict with analysis parameters
+        simple_format: Return simple format (default: True)
+
+    Returns:
+        Same as predict() but runs synchronously
+    """
+    return asyncio.run(predict(json_input, simple_format))
 
 # CLI Support
 if __name__ == "__main__":
