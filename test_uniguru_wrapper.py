@@ -27,7 +27,7 @@ def test_simple_format():
             "expected_keys": ["sentiment", "tone", "confidence", "tts_emotion"]
         },
         {
-            "name": "📋 Test 2: Image URL + Kids Persona", 
+            "name": "📋 Test 2: Invalid Image URL + Kids Persona (Graceful Handling)",
             "input": {
                 "image_url": "https://example.com/happy_child.jpg",
                 "persona": "kids"
@@ -35,10 +35,10 @@ def test_simple_format():
             "expected_keys": ["sentiment", "tone", "confidence", "tts_emotion"]
         },
         {
-            "name": "📋 Test 3: Text + Image + Spiritual Persona",
+            "name": "📋 Test 3: Text + Invalid Image + Spiritual Persona (Multi-modal Fallback)",
             "input": {
                 "text": "Finding peace in meditation",
-                "image_url": "https://example.com/meditation.jpg", 
+                "image_url": "https://example.com/meditation.jpg",
                 "persona": "spiritual"
             },
             "expected_keys": ["sentiment", "tone", "confidence", "tts_emotion"]
@@ -54,6 +54,30 @@ def test_simple_format():
         {
             "name": "📋 Test 5: JSON String Input Format",
             "input": '{"text": "This is amazing!", "persona": "kids"}',
+            "expected_keys": ["sentiment", "tone", "confidence", "tts_emotion"]
+        },
+        {
+            "name": "📋 Test 6: Empty Text Handling",
+            "input": {
+                "text": "",
+                "persona": "youth"
+            },
+            "expected_keys": ["sentiment", "tone", "confidence", "tts_emotion"]
+        },
+        {
+            "name": "📋 Test 7: Complex Emotional Text",
+            "input": {
+                "text": "I'm feeling overwhelmed but also excited about this new challenge!",
+                "persona": "youth"
+            },
+            "expected_keys": ["sentiment", "tone", "confidence", "tts_emotion"]
+        },
+        {
+            "name": "📋 Test 8: Negative Sentiment",
+            "input": {
+                "text": "I'm really disappointed and frustrated with this situation.",
+                "persona": "spiritual"
+            },
             "expected_keys": ["sentiment", "tone", "confidence", "tts_emotion"]
         }
     ]

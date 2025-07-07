@@ -45,12 +45,13 @@ class TextClassifier:
                 top_k=2  # Get top 2 predictions for better analysis
             )
 
-            # Advanced emotion classification pipeline
+            # Advanced emotion classification pipeline - UPGRADED MODEL
             self.emotion_classifier = pipeline(
                 "text-classification",
-                model="j-hartmann/emotion-english-distilroberta-base",
+                model="cardiffnlp/twitter-roberta-base-emotion-multilang-latest",
                 device=device,
-                top_k=None  # Get all emotion scores
+                top_k=None,  # Get all emotion scores
+                return_all_scores=True
             )
 
             # Define comprehensive emotion mapping
@@ -109,26 +110,48 @@ class TextClassifier:
             return self._create_neutral_response()
 
     def _process_emotion_results(self, emotion_results, base_confidence):
-        """Process emotion classification results into advanced metrics"""
+        """Process emotion classification results into advanced metrics with robust error handling"""
         emotions = {}
 
-        # Handle different emotion result formats
+        # Handle different emotion result formats with comprehensive error handling
         try:
-            if isinstance(emotion_results, list) and len(emotion_results) > 0:
+            # Case 1: Direct dictionary format (most common issue)
+            if isinstance(emotion_results, dict):
+                # Format: {'joy': 0.8, 'sadness': 0.2, ...} or {'label': 'joy', 'score': 0.8}
+                if 'label' in emotion_results and 'score' in emotion_results:
+                    # Single result format
+                    emotions[emotion_results['label']] = emotion_results['score']
+                else:
+                    # Multi-emotion dictionary format
+                    emotions = {k: float(v) for k, v in emotion_results.items() if isinstance(v, (int, float))}
+
+            # Case 2: List of dictionaries
+            elif isinstance(emotion_results, list) and len(emotion_results) > 0:
                 if isinstance(emotion_results[0], dict):
                     # Format: [{'label': 'joy', 'score': 0.8}, ...]
                     for result in emotion_results:
-                        emotions[result['label']] = result['score']
-                elif isinstance(emotion_results[0], list) and len(emotion_results[0]) >= 2:
+                        if 'label' in result and 'score' in result:
+                            emotions[result['label']] = float(result['score'])
+                        elif len(result) == 1:  # Single key-value pair
+                            for k, v in result.items():
+                                emotions[k] = float(v)
+                elif isinstance(emotion_results[0], (list, tuple)) and len(emotion_results[0]) >= 2:
                     # Format: [['joy', 0.8], ['sadness', 0.2], ...]
                     for result in emotion_results:
-                        emotions[result[0]] = result[1]
+                        emotions[result[0]] = float(result[1])
                 else:
                     # Fallback: create neutral emotion
                     emotions = {'neutral': base_confidence}
+
+            # Case 3: Empty or invalid results
             else:
                 emotions = {'neutral': base_confidence}
-        except (KeyError, IndexError, TypeError) as e:
+
+            # Ensure we have at least one emotion
+            if not emotions:
+                emotions = {'neutral': base_confidence}
+
+        except (KeyError, IndexError, TypeError, ValueError) as e:
             logger.warning(f"Error processing emotion results: {e}, using neutral")
             emotions = {'neutral': base_confidence}
 
