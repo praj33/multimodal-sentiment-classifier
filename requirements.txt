@@ -48,4 +48,12 @@ passlib[bcrypt]==1.7.4
 python-magic==0.4.27
 bleach==6.1.0
 
+# Analytics Dashboard Dependencies
+plotly==5.17.0
+websockets==12.0
+
+# Uniguru Agent Dependencies
+langdetect==1.0.9
+pillow>=9.0.0
+
 # Environment and configuration (already included above)
